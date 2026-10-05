@@ -5,6 +5,7 @@ import { playSound } from '../audio/sounds';
 import { COIN_PACKS, type CoinPack } from '../data/coinPacks';
 import { colors } from '../theme/colors';
 import IconBubble from './IconBubble';
+import CoinIcon from './CoinIcon';
 
 type Props = {
   visible: boolean;
@@ -55,11 +56,16 @@ export default function CoinStoreModal({ visible, onClose }: Props) {
                     <Text style={styles.badgeText}>{pack.highlight}</Text>
                   </View>
                 )}
-                <IconBubble icon={pack.icon} size={46} fontSize={24} style={styles.packIconBubble} />
+                {pack.id === 'starter' ? (
+                  <CoinIcon size={46} style={styles.packIconBubble} />
+                ) : (
+                  <IconBubble icon={pack.icon} size={46} fontSize={24} style={styles.packIconBubble} />
+                )}
                 <View style={styles.packInfo}>
-                  <Text style={styles.packCoins}>
-                    🪙 {(pack.coins + pack.bonusCoins).toLocaleString('es')}
-                  </Text>
+                  <View style={styles.packCoinsRow}>
+                    <CoinIcon size={16} />
+                    <Text style={styles.packCoins}>{(pack.coins + pack.bonusCoins).toLocaleString('es')}</Text>
+                  </View>
                   {pack.bonusCoins > 0 && (
                     <Text style={styles.packBonus}>
                       {pack.coins.toLocaleString('es')} + {pack.bonusCoins} de regalo
@@ -190,6 +196,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: colors.textPrimary,
+  },
+  packCoinsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   packBonus: {
     fontSize: 11,

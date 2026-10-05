@@ -12,6 +12,10 @@ type Props = {
 
 const BREATH_DURATION = 1600;
 const BREATH_AMPLITUDE = 1.035;
+const FIRST_BLINK_DELAY_MS = 7000;
+const BLINK_INTERVAL_MIN_MS = 5000;
+const BLINK_INTERVAL_VARIANCE_MS = 3000;
+const BLINK_DURATION_MS = 120;
 
 // All animations below only ever touch transform/opacity so they can run fully on
 // the native thread (useNativeDriver: true) — no JS-thread work per frame, no
@@ -21,6 +25,7 @@ const BREATH_AMPLITUDE = 1.035;
 // breathing scale pulse (always on) and the feed reaction bump (triggered).
 export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal = 0 }: Props) {
   const [blinking, setBlinking] = useState(false);
+  const imageSize = size * 0.88;
   const breath = useRef(new Animated.Value(0)).current;
   const feedBump = useRef(new Animated.Value(0)).current;
   const sparkle = useRef(new Animated.Value(0)).current;
@@ -78,9 +83,13 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
     if (!isFocused) return;
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout>;
+    let isFirstBlink = true;
 
     const scheduleBlink = () => {
-      const delay = 2200 + Math.random() * 2600;
+      const delay = isFirstBlink
+        ? FIRST_BLINK_DELAY_MS + Math.random() * 3000
+        : BLINK_INTERVAL_MIN_MS + Math.random() * BLINK_INTERVAL_VARIANCE_MS;
+      isFirstBlink = false;
       timeoutId = setTimeout(() => {
         if (cancelled) return;
         setBlinking(true);
@@ -88,7 +97,7 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
           if (cancelled) return;
           setBlinking(false);
           scheduleBlink();
-        }, 140);
+        }, BLINK_DURATION_MS);
       }, delay);
     };
 
@@ -107,9 +116,19 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
       <Animated.View style={{ transform: [{ scale: Animated.multiply(breathScale, bumpScale) }] }}>
+        <Image source={eyesOpen} style={{ width: imageSize, height: imageSize }} resizeMode="contain" />
         <Image
-          source={blinking ? eyesClosed : eyesOpen}
-          style={{ width: size, height: size }}
+          source={eyesClosed}
+          style={[
+            styles.closedEyes,
+            {
+              width: imageSize,
+              height: imageSize,
+              top: 0,
+              left: 0,
+              opacity: blinking ? 1 : 0,
+            },
+          ]}
           resizeMode="contain"
         />
       </Animated.View>
@@ -131,6 +150,9 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  closedEyes: {
+    position: 'absolute',
   },
   sparkle: {
     position: 'absolute',

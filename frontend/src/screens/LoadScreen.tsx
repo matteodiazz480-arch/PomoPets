@@ -32,7 +32,7 @@ export default function LoadScreen({ onFinish }: Props) {
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
   return (
-    <ImageBackground source={LOAD_IMAGE} style={styles.root} resizeMode="cover">
+    <ImageBackground source={LOAD_IMAGE} style={styles.root} resizeMode="contain">
       <LinearGradient
         colors={['rgba(20,24,46,0)', 'rgba(20,24,46,0.15)', 'rgba(20,24,46,0.72)']}
         locations={[0, 0.55, 1]}
@@ -53,6 +53,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     justifyContent: 'flex-end',
+    backgroundColor: colors.appBg,
   },
   scrim: {
     ...StyleSheet.absoluteFill,

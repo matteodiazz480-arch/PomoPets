@@ -202,8 +202,8 @@ const styles = StyleSheet.create({
     opacity: 0.35,
   },
   stageImage: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
   },
   stageInfo: {
     flex: 1,

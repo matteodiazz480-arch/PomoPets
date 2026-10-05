@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
 import IconBubble from '../components/IconBubble';
+import CoinIcon from '../components/CoinIcon';
 import { useGame } from '../context/GameContext';
 import { SHOP_FOODS } from '../data/food';
 import { SHOP_BACKGROUNDS } from '../data/shop';
@@ -24,7 +25,7 @@ export default function ShopScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Tienda</Text>
           <View style={styles.coinPill}>
-            <IconBubble icon="🪙" size={22} background={colors.cardAlt} style={styles.coinIconBubble} />
+            <CoinIcon size={22} style={styles.coinIconBubble} />
             <Text style={styles.coinValue}>{state.coins}</Text>
           </View>
         </View>
@@ -85,7 +86,7 @@ export default function ShopScreen() {
                       <Text style={styles.ownedLabel}>Aplicar</Text>
                     ) : (
                       <View style={styles.priceRow}>
-                        <IconBubble icon="🪙" size={18} background={colors.cardAlt} style={styles.priceIconBubble} />
+                        <CoinIcon size={18} style={styles.priceIconBubble} />
                         <Text style={styles.priceValue}>{item.price}</Text>
                       </View>
                     )}
@@ -126,7 +127,7 @@ export default function ShopScreen() {
                       <Text style={styles.foodStat}>💛 +{item.happiness}</Text>
                     </View>
                     <View style={styles.priceRow}>
-                      <IconBubble icon="🪙" size={18} background={colors.cardAlt} style={styles.priceIconBubble} />
+                      <CoinIcon size={18} style={styles.priceIconBubble} />
                       <Text style={styles.priceValue}>{item.price}</Text>
                     </View>
                   </TouchableOpacity>

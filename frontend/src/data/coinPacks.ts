@@ -15,7 +15,7 @@ export const COIN_PACKS: CoinPack[] = [
     coins: 100,
     bonusCoins: 0,
     priceLabel: '$0.99',
-    icon: '🪙',
+    icon: 'P',
   },
   {
     id: 'popular',

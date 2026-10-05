@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
 import PrimaryButton from './PrimaryButton';
+import CoinIcon from './CoinIcon';
 
 type Props = {
   visible: boolean;
@@ -24,7 +25,7 @@ export default function RewardModal({ visible, xp, coins, onClose }: Props) {
               <Text style={styles.rewardText}>+{xp} XP</Text>
             </View>
             <View style={[styles.rewardPill, styles.coinPill]}>
-              <Text style={styles.rewardIcon}>🪙</Text>
+              <CoinIcon size={18} style={styles.rewardIcon} />
               <Text style={styles.rewardText}>+{coins}</Text>
             </View>
           </View>
@@ -92,7 +93,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF3D6',
   },
   rewardIcon: {
-    fontSize: 16,
     marginRight: 6,
   },
   rewardText: {

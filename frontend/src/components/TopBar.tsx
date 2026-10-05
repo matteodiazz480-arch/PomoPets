@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
 import IconBubble from './IconBubble';
+import CoinIcon from './CoinIcon';
 import { colors } from '../theme/colors';
 
 type Props = {
@@ -18,7 +19,7 @@ export default function TopBar({ coins, streak, onAddCoins }: Props) {
     <View style={[styles.wrap, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
       <View style={styles.coinGroup}>
         <View style={styles.pill}>
-          <IconBubble icon="🪙" size={24} background={colors.cardAlt} />
+          <CoinIcon size={24} />
           <Text style={styles.value} numberOfLines={1}>
             {coins}
           </Text>

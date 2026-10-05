@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { MissionDef } from '../data/missions';
 import { colors } from '../theme/colors';
 import PrimaryButton from './PrimaryButton';
+import CoinIcon from './CoinIcon';
 
 type Props = {
   mission: MissionDef;
@@ -42,7 +43,10 @@ export default function MissionCard({ mission, progress, claimed, onClaim }: Pro
       <View style={styles.action}>
         <View style={styles.rewardRow}>
           <Text style={styles.rewardText}>+{mission.xp} XP</Text>
-          <Text style={styles.rewardCoins}>🪙{mission.coins}</Text>
+          <View style={styles.rewardCoins}>
+            <CoinIcon size={14} />
+            <Text style={styles.rewardCoinsText}>{mission.coins}</Text>
+          </View>
         </View>
         {claimed ? (
           <Text style={styles.claimedLabel}>Reclamada</Text>
@@ -146,6 +150,11 @@ const styles = StyleSheet.create({
     color: colors.accentPurple,
   },
   rewardCoins: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  rewardCoinsText: {
     fontSize: 11,
     fontWeight: '800',
     color: colors.coinDark,
