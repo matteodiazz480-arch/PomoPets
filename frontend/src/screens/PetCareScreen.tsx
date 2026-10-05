@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Dimensions, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FoodChip from '../components/FoodChip';
 import PetAvatar from '../components/PetAvatar';
@@ -19,7 +19,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // The pet is the absolute protagonist here, plain — no glow/aura/ground shadow —
 // sized off both screen width and height so it stays huge without ever pushing
 // the care sheet off-screen.
-const PET_SIZE = Math.min(360, SCREEN_WIDTH - 40, SCREEN_HEIGHT * 0.44);
+const PET_SIZE = Math.min(300, SCREEN_WIDTH * 0.76, SCREEN_HEIGHT * 0.36);
 const SHEET_PADDING_H = 24;
 // Sheet horizontal padding on both sides, minus the stat row's icon bubble (30) and its margin (10).
 const STAT_TRACK_WIDTH = SCREEN_WIDTH - SHEET_PADDING_H * 2 - 30 - 10;
@@ -40,50 +40,53 @@ export default function PetCareScreen() {
   };
 
   return (
-    <ImageBackground source={ROOM_BACKGROUND} resizeMode="cover" style={styles.root}>
-      <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
-        <Text style={styles.headerTitle}>Mi Mascota</Text>
-      </View>
-
-      <View style={styles.stageArea}>
-        <PetAvatar eyesOpen={stage.eyesOpen} eyesClosed={stage.eyesClosed} size={PET_SIZE} feedSignal={feedSignal} />
-        <TouchableOpacity style={styles.nameBadge} activeOpacity={0.7} onPress={() => setRenameVisible(true)}>
-          <Text style={styles.petName}>{displayName}</Text>
-          <Ionicons name="pencil" size={12} color={colors.textSecondary} style={styles.petNameIcon} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 104 }]}>
-        <View style={styles.sheetHandle} />
-
-        <View style={styles.statsRow}>
-          <StatBar icon="🍗" label="Hambre" value={state.hunger} fillColor={colors.hunger} trackWidth={STAT_TRACK_WIDTH} />
-          <StatBar
-            icon="💛"
-            label="Felicidad"
-            value={state.happiness}
-            fillColor={colors.happiness}
-            trackWidth={STAT_TRACK_WIDTH}
-          />
+    <View style={styles.root}>
+      <Image source={ROOM_BACKGROUND} resizeMode="contain" style={styles.backgroundImage} />
+      <View style={styles.content}>
+        <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
+          <Text style={styles.headerTitle}>Mi Mascota</Text>
         </View>
 
-        <View style={styles.foodDivider} />
+        <View style={styles.stageArea}>
+          <PetAvatar eyesOpen={stage.eyesOpen} eyesClosed={stage.eyesClosed} size={PET_SIZE} feedSignal={feedSignal} />
+          <TouchableOpacity style={styles.nameBadge} activeOpacity={0.7} onPress={() => setRenameVisible(true)}>
+            <Text style={styles.petName}>{displayName}</Text>
+            <Ionicons name="pencil" size={12} color={colors.textSecondary} style={styles.petNameIcon} />
+          </TouchableOpacity>
+        </View>
 
-        <Text style={styles.foodTitle}>Alimentar</Text>
-        {ownedFoods.length === 0 ? (
-          <Text style={styles.foodEmpty}>Compra comida en la Tienda para alimentar a tu mascota</Text>
-        ) : (
-          <View style={styles.foodChipsRow}>
-            {ownedFoods.map((food) => (
-              <FoodChip
-                key={food.id}
-                icon={food.icon}
-                count={state.inventory[food.id] ?? 0}
-                onFeed={() => handleFeed(food.id)}
-              />
-            ))}
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + 104 }]}>
+          <View style={styles.sheetHandle} />
+
+          <View style={styles.statsRow}>
+            <StatBar icon="🍗" label="Hambre" value={state.hunger} fillColor={colors.hunger} trackWidth={STAT_TRACK_WIDTH} />
+            <StatBar
+              icon="💛"
+              label="Felicidad"
+              value={state.happiness}
+              fillColor={colors.happiness}
+              trackWidth={STAT_TRACK_WIDTH}
+            />
           </View>
-        )}
+
+          <View style={styles.foodDivider} />
+
+          <Text style={styles.foodTitle}>Alimentar</Text>
+          {ownedFoods.length === 0 ? (
+            <Text style={styles.foodEmpty}>Compra comida en la Tienda para alimentar a tu mascota</Text>
+          ) : (
+            <View style={styles.foodChipsRow}>
+              {ownedFoods.map((food) => (
+                <FoodChip
+                  key={food.id}
+                  icon={food.icon}
+                  count={state.inventory[food.id] ?? 0}
+                  onFeed={() => handleFeed(food.id)}
+                />
+              ))}
+            </View>
+          )}
+        </View>
       </View>
 
       <RenameModal
@@ -92,12 +95,23 @@ export default function PetCareScreen() {
         onSave={setPetName}
         onClose={() => setRenameVisible(false)}
       />
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
+    flex: 1,
+    backgroundColor: colors.appBg,
+  },
+  backgroundImage: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  content: {
     flex: 1,
   },
   header: {

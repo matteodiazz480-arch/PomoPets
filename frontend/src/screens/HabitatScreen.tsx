@@ -18,7 +18,9 @@ import { getPetPhrase } from '../data/petPhrases';
 import { getStageForLevel } from '../data/pets';
 import { colors } from '../theme/colors';
 
-const PET_SIZE = Math.min(320, Dimensions.get('window').width - 60);
+const HABITAT_WIDTH = Dimensions.get('window').width;
+const PET_SIZE =
+  HABITAT_WIDTH < 600 ? Math.min(240, HABITAT_WIDTH * 0.62) : Math.min(320, HABITAT_WIDTH - 60);
 // How often the pet's line refreshes on its own (it also refreshes whenever
 // phase/streak change) — keeps it feeling alive without flickering text.
 const PHRASE_REFRESH_MS = 5 * 60 * 1000;
