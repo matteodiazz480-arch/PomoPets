@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { ImageBackground, StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import FittedImageBackground from './FittedImageBackground';
 import { SHOP_BACKGROUNDS } from '../data/shop';
 import type { BackgroundThemeId } from '../theme/colors';
 
@@ -27,18 +28,20 @@ export default function HabitatBackground({ theme, children }: Props) {
   const item = SHOP_BACKGROUNDS.find((b) => b.id === theme);
 
   return (
-    <View style={StyleSheet.absoluteFill}>
-      <ImageBackground source={BACKGROUND_IMAGE} resizeMode="cover" style={StyleSheet.absoluteFill}>
-        {overlay.opacity > 0 && (
-          <LinearGradient
-            colors={item?.colors ?? overlay.colors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={[StyleSheet.absoluteFill, { opacity: overlay.opacity }]}
-          />
-        )}
-        {children}
-      </ImageBackground>
-    </View>
+    <FittedImageBackground
+      source={BACKGROUND_IMAGE}
+      aspectRatio={1080 / 1920}
+      backgroundColor={overlay.colors[1]}
+    >
+      {overlay.opacity > 0 && (
+        <LinearGradient
+          colors={item?.colors ?? overlay.colors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={[StyleSheet.absoluteFill, { opacity: overlay.opacity }]}
+        />
+      )}
+      {children}
+    </FittedImageBackground>
   );
 }

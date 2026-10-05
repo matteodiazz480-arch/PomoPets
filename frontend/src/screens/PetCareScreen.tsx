@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FoodChip from '../components/FoodChip';
+import FittedImageBackground from '../components/FittedImageBackground';
 import PetAvatar from '../components/PetAvatar';
 import RenameModal from '../components/RenameModal';
 import StatBar from '../components/StatBar';
@@ -40,8 +41,7 @@ export default function PetCareScreen() {
   };
 
   return (
-    <View style={styles.root}>
-      <Image source={ROOM_BACKGROUND} resizeMode="contain" style={styles.backgroundImage} />
+    <FittedImageBackground source={ROOM_BACKGROUND} aspectRatio={1536 / 2752} backgroundColor={colors.appBg}>
       <View style={styles.content}>
         <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
           <Text style={styles.headerTitle}>Mi Mascota</Text>
@@ -95,22 +95,11 @@ export default function PetCareScreen() {
         onSave={setPetName}
         onClose={() => setRenameVisible(false)}
       />
-    </View>
+    </FittedImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.appBg,
-  },
-  backgroundImage: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
   content: {
     flex: 1,
   },

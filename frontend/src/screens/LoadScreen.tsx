@@ -1,7 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FittedImageBackground from '../components/FittedImageBackground';
 import { colors } from '../theme/colors';
 
 const LOAD_IMAGE = require('../../Pets/LoadScreen.jpg');
@@ -32,21 +33,22 @@ export default function LoadScreen({ onFinish }: Props) {
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
   return (
-    <View style={styles.root}>
-      <Image source={LOAD_IMAGE} style={styles.backgroundImage} resizeMode="contain" />
-      <LinearGradient
-        colors={['rgba(20,24,46,0)', 'rgba(20,24,46,0.15)', 'rgba(20,24,46,0.72)']}
-        locations={[0, 0.55, 1]}
-        style={styles.scrim}
-      />
-      <View style={[styles.bottomArea, { paddingBottom: insets.bottom + 48 }]}>
-        <Text style={styles.brand}>PomoPets</Text>
-        <View style={styles.track}>
-          <Animated.View style={[styles.fill, { width }]} />
+    <FittedImageBackground source={LOAD_IMAGE} aspectRatio={1536 / 2752} backgroundColor={colors.appBg}>
+      <View style={styles.root}>
+        <LinearGradient
+          colors={['rgba(20,24,46,0)', 'rgba(20,24,46,0.15)', 'rgba(20,24,46,0.72)']}
+          locations={[0, 0.55, 1]}
+          style={styles.scrim}
+        />
+        <View style={[styles.bottomArea, { paddingBottom: insets.bottom + 48 }]}>
+          <Text style={styles.brand}>PomoPets</Text>
+          <View style={styles.track}>
+            <Animated.View style={[styles.fill, { width }]} />
+          </View>
+          <Text style={styles.hint}>Preparando tu hábitat…</Text>
         </View>
-        <Text style={styles.hint}>Preparando tu hábitat…</Text>
       </View>
-    </View>
+    </FittedImageBackground>
   );
 }
 
@@ -54,14 +56,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: colors.appBg,
-  },
-  backgroundImage: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
   },
   scrim: {
     ...StyleSheet.absoluteFill,
