@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, ImageBackground, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 
@@ -32,7 +32,8 @@ export default function LoadScreen({ onFinish }: Props) {
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
   return (
-    <ImageBackground source={LOAD_IMAGE} style={styles.root} resizeMode="contain">
+    <View style={styles.root}>
+      <Image source={LOAD_IMAGE} style={styles.backgroundImage} resizeMode="contain" />
       <LinearGradient
         colors={['rgba(20,24,46,0)', 'rgba(20,24,46,0.15)', 'rgba(20,24,46,0.72)']}
         locations={[0, 0.55, 1]}
@@ -45,7 +46,7 @@ export default function LoadScreen({ onFinish }: Props) {
         </View>
         <Text style={styles.hint}>Preparando tu hábitat…</Text>
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -54,6 +55,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: colors.appBg,
+  },
+  backgroundImage: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   },
   scrim: {
     ...StyleSheet.absoluteFill,
