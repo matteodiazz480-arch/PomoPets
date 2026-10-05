@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
 import HabitatScreen from '../screens/HabitatScreen';
@@ -31,10 +31,14 @@ function CustomTabBar({ state, navigation }: any) {
           const focused = state.index === index;
           const meta = TABS[route.name];
           return (
-            <View
+            <TouchableOpacity
               key={route.key}
               style={[styles.tabItem, focused && styles.tabItemFocused]}
-              onTouchEnd={() => {
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityState={{ selected: focused }}
+              accessibilityLabel={meta.label}
+              onPress={() => {
                 if (!focused) {
                   playSound('tap');
                   navigation.navigate(route.name);
@@ -47,7 +51,7 @@ function CustomTabBar({ state, navigation }: any) {
                 color={focused ? colors.primaryDark : colors.textSecondary}
               />
               {focused && <Text style={styles.tabLabel}>{meta.label}</Text>}
-            </View>
+            </TouchableOpacity>
           );
         })}
       </View>
