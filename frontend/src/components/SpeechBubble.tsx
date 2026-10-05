@@ -1,0 +1,77 @@
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { colors } from '../theme/colors';
+
+type Props = {
+  text: string;
+};
+
+export default function SpeechBubble({ text }: Props) {
+  const pop = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    pop.setValue(0);
+    Animated.spring(pop, { toValue: 1, friction: 6, tension: 90, useNativeDriver: true }).start();
+  }, [text, pop]);
+
+  const scale = pop.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] });
+  const opacity = pop;
+
+  return (
+    <Animated.View style={[styles.wrap, { opacity, transform: [{ scale }] }]}>
+      <View style={styles.bubble}>
+        <Text style={styles.text}>{text}</Text>
+      </View>
+      <View style={styles.tailShadow} />
+      <View style={styles.tail} />
+    </Animated.View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: {
+    alignItems: 'center',
+    maxWidth: 260,
+  },
+  bubble: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: colors.border,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  text: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  tailShadow: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderTopWidth: 12,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: colors.border,
+    marginTop: -2,
+  },
+  tail: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: colors.card,
+    marginTop: -11,
+  },
+});
