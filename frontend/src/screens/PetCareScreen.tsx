@@ -24,7 +24,7 @@ export default function PetCareScreen() {
   const desktop = width >= 900;
   const petSize = desktop
     ? Math.min(500, height * 0.66, (width - 328) * 0.5)
-    : Math.min(340, width * 0.86, height * 0.43);
+    : Math.min(390, width * 0.96, height * 0.48);
   const statTrackWidth = desktop
     ? Math.max(120, Math.min(340, (width - 328) * 0.42 - 56))
     : Math.min(520, width) - SHEET_PADDING_H * 2;
@@ -49,7 +49,7 @@ export default function PetCareScreen() {
         </View>
 
         <View style={[styles.desktopLayout, desktop && styles.desktopLayoutWide]}>
-          <View style={styles.stageArea}>
+          <View style={[styles.stageArea, desktop ? styles.desktopStageAreaShift : styles.mobileStageAreaShift]}>
             <PetAvatar eyesOpen={stage.eyesOpen} eyesClosed={stage.eyesClosed} size={petSize} feedSignal={feedSignal} />
             <TouchableOpacity style={styles.nameBadge} activeOpacity={0.7} onPress={() => setRenameVisible(true)}>
               <Text style={styles.petName}>{displayName}</Text>
@@ -143,6 +143,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  mobileStageAreaShift: {
+    transform: [{ translateX: 14 }],
+  },
+  desktopStageAreaShift: {
+    transform: [{ translateX: 28 }],
   },
   desktopLayout: {
     flex: 1,

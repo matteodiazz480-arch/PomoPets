@@ -46,7 +46,7 @@ export default function HabitatScreen() {
   const largeControls = width >= 1100;
   const petSize = desktop
     ? Math.min(500, height * 0.68, (width - 356) * 0.52)
-    : Math.min(250, height * 0.35, width * 0.72);
+    : Math.min(266, height * 0.38, width * 0.82);
   const {
     state,
     level,
@@ -122,15 +122,17 @@ export default function HabitatScreen() {
             <View style={styles.bubbleWrap}>
               <SpeechBubble text={phrase} large={desktop} />
             </View>
-            <TouchableOpacity
-              style={styles.petNameRow}
-              activeOpacity={0.7}
-              onPress={() => setRenameVisible(true)}
-            >
-              <Text style={[styles.petName, desktop && styles.desktopPetName]}>{displayName}</Text>
-              <Ionicons name="pencil" size={14} color={colors.textSecondary} style={styles.petNameIcon} />
-            </TouchableOpacity>
-            <PetAvatar eyesOpen={stage.eyesOpen} eyesClosed={stage.eyesClosed} size={petSize} />
+            <View style={[styles.petCharacter, desktop && styles.desktopPetCharacter]}>
+              <TouchableOpacity
+                style={styles.petNameRow}
+                activeOpacity={0.7}
+                onPress={() => setRenameVisible(true)}
+              >
+                <Text style={[styles.petName, desktop && styles.desktopPetName]}>{displayName}</Text>
+                <Ionicons name="pencil" size={14} color={colors.textSecondary} style={styles.petNameIcon} />
+              </TouchableOpacity>
+              <PetAvatar eyesOpen={stage.eyesOpen} eyesClosed={stage.eyesClosed} size={petSize} />
+            </View>
             <View style={styles.xpBarWrap}>
               <XPBar level={level} xpIntoLevel={xpIntoLevel} xpToNext={xpToNext} large={desktop} />
             </View>
@@ -305,6 +307,13 @@ const styles = StyleSheet.create({
   },
   bubbleWrap: {
     marginBottom: 2,
+  },
+  petCharacter: {
+    alignItems: 'center',
+    transform: [{ translateX: 14 }],
+  },
+  desktopPetCharacter: {
+    transform: [{ translateX: 28 }],
   },
   petNameRow: {
     flexDirection: 'row',

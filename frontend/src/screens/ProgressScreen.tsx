@@ -25,26 +25,26 @@ export default function ProgressScreen() {
           { paddingTop: insets.top + 20, paddingBottom: desktop ? 40 : insets.bottom + 110 },
         ]}
       >
-        <Text style={styles.title}>Progreso</Text>
-        <Text style={styles.subtitle}>Tu camino de evolución</Text>
+        <Text style={[styles.title, desktop && styles.desktopTitle]}>Progreso</Text>
+        <Text style={[styles.subtitle, desktop && styles.desktopSubtitle]}>Tu camino de evolución</Text>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={[styles.statValue, styles.levelBadge]}>{level}</Text>
-            <Text style={styles.statLabel}>Nivel</Text>
+        <View style={[styles.statsRow, desktop && styles.desktopStatsRow]}>
+          <View style={[styles.statCard, desktop && styles.desktopStatCard]}>
+            <Text style={[styles.statValue, desktop && styles.desktopStatValue, styles.levelBadge]}>{level}</Text>
+            <Text style={[styles.statLabel, desktop && styles.desktopStatLabel]}>Nivel</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statValue, styles.streakBadge]}>{state.streak}</Text>
-            <Text style={styles.statLabel}>Racha 🔥</Text>
+          <View style={[styles.statCard, desktop && styles.desktopStatCard]}>
+            <Text style={[styles.statValue, desktop && styles.desktopStatValue, styles.streakBadge]}>{state.streak}</Text>
+            <Text style={[styles.statLabel, desktop && styles.desktopStatLabel]}>Racha 🔥</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statValue, styles.minutesBadge]}>{state.minutesStudiedTotal}</Text>
-            <Text style={styles.statLabel}>Minutos</Text>
+          <View style={[styles.statCard, desktop && styles.desktopStatCard]}>
+            <Text style={[styles.statValue, desktop && styles.desktopStatValue, styles.minutesBadge]}>{state.minutesStudiedTotal}</Text>
+            <Text style={[styles.statLabel, desktop && styles.desktopStatLabel]}>Minutos</Text>
           </View>
         </View>
 
-        <View style={styles.xpCard}>
-          <Text style={styles.xpCardTitle}>
+        <View style={[styles.xpCard, desktop && styles.desktopXpCard]}>
+          <Text style={[styles.xpCardTitle, desktop && styles.desktopXpCardTitle]}>
             {xpIntoLevel} / {xpToNext} XP para el siguiente nivel
           </Text>
           <View style={styles.xpTrack}>
@@ -54,7 +54,7 @@ export default function ProgressScreen() {
 
         <View style={[styles.desktopSections, wide && styles.desktopSectionsWide]}>
           <View style={styles.progressSection}>
-            <Text style={styles.sectionTitle}>⭐ Misiones diarias</Text>
+            <Text style={[styles.sectionTitle, desktop && styles.desktopSectionTitle]}>⭐ Misiones diarias</Text>
             {todaysMissions.map((mission) => (
               <MissionCard
                 key={mission.id}
@@ -62,27 +62,28 @@ export default function ProgressScreen() {
                 progress={mission.getProgress(state)}
                 claimed={state.claimedMissions.includes(mission.id)}
                 onClaim={() => claimMission(mission.id)}
+                large={desktop}
               />
             ))}
           </View>
 
           <View style={styles.progressSection}>
-            <Text style={[styles.sectionTitle, styles.sectionTitleSpaced]}>✨ Etapas de evolución</Text>
+            <Text style={[styles.sectionTitle, styles.sectionTitleSpaced, desktop && styles.desktopSectionTitle]}>✨ Etapas de evolución</Text>
             {EVOLUTION_STAGES.map((stage) => {
               const unlocked = level >= stage.minLevel;
               const isCurrent = stage.id === currentStage.id;
               return (
-                <View key={stage.id} style={[styles.stageCard, isCurrent && styles.stageCardActive]}>
-                  <View style={[styles.stageImageWrap, !unlocked && styles.stageImageLocked]}>
-                    <Image source={stage.eyesOpen} style={styles.stageImage} resizeMode="contain" />
+                <View key={stage.id} style={[styles.stageCard, desktop && styles.desktopStageCard, isCurrent && styles.stageCardActive]}>
+                  <View style={[styles.stageImageWrap, desktop && styles.desktopStageImageWrap, !unlocked && styles.stageImageLocked]}>
+                    <Image source={stage.eyesOpen} style={[styles.stageImage, desktop && styles.desktopStageImage]} resizeMode="contain" />
                   </View>
                   <View style={styles.stageInfo}>
                     <View style={styles.stageHeaderRow}>
-                      <Text style={styles.stageName}>{stage.name}</Text>
+                      <Text style={[styles.stageName, desktop && styles.desktopStageName]}>{stage.name}</Text>
                       {isCurrent && <Text style={styles.currentBadge}>Actual</Text>}
                     </View>
-                    <Text style={styles.stageDesc}>{stage.description}</Text>
-                    <Text style={styles.stageLevel}>
+                    <Text style={[styles.stageDesc, desktop && styles.desktopStageDesc]}>{stage.description}</Text>
+                    <Text style={[styles.stageLevel, desktop && styles.desktopStageLevel]}>
                       {unlocked ? 'Desbloqueado' : `Se desbloquea en nivel ${stage.minLevel}`}
                     </Text>
                   </View>
@@ -108,8 +109,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   desktopScroll: {
-    maxWidth: 1220,
-    paddingHorizontal: 40,
+    maxWidth: 1420,
+    paddingHorizontal: 48,
   },
   title: {
     fontSize: 30,
@@ -117,16 +118,28 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     color: colors.textPrimary,
   },
+  desktopTitle: {
+    fontSize: 38,
+  },
   subtitle: {
     color: colors.textSecondary,
     fontWeight: '500',
     marginTop: 4,
     marginBottom: 18,
   },
+  desktopSubtitle: {
+    fontSize: 17,
+    marginTop: 6,
+    marginBottom: 24,
+  },
   statsRow: {
     flexDirection: 'row',
     gap: 12,
     marginBottom: 18,
+  },
+  desktopStatsRow: {
+    gap: 18,
+    marginBottom: 22,
   },
   statCard: {
     flex: 1,
@@ -144,6 +157,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  desktopStatCard: {
+    paddingVertical: 22,
+    borderRadius: 24,
+  },
   statValue: {
     minWidth: 42,
     height: 42,
@@ -159,6 +176,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: 8,
     marginBottom: 4,
+  },
+  desktopStatValue: {
+    minWidth: 54,
+    height: 54,
+    borderRadius: 19,
+    fontSize: 28,
+    paddingHorizontal: 12,
   },
   levelBadge: {
     backgroundColor: '#EFEBFF',
@@ -178,6 +202,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
+  desktopStatLabel: {
+    fontSize: 14,
+    marginTop: 5,
+  },
   xpCard: {
     backgroundColor: colors.card,
     borderRadius: 22,
@@ -193,11 +221,20 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  desktopXpCard: {
+    padding: 24,
+    borderRadius: 26,
+    marginBottom: 30,
+  },
   xpCardTitle: {
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 10,
     fontSize: 13,
+  },
+  desktopXpCardTitle: {
+    fontSize: 17,
+    marginBottom: 14,
   },
   xpTrack: {
     height: 9,
@@ -216,6 +253,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     color: colors.textPrimary,
     marginBottom: 14,
+  },
+  desktopSectionTitle: {
+    fontSize: 24,
+    marginBottom: 18,
   },
   sectionTitleSpaced: {
     marginTop: 14,
@@ -249,6 +290,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  desktopStageCard: {
+    padding: 20,
+    borderRadius: 24,
+    marginBottom: 16,
+  },
   stageCardActive: {
     borderColor: colors.primaryDark,
     borderBottomColor: colors.primaryDeep,
@@ -264,12 +310,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 14,
   },
+  desktopStageImageWrap: {
+    width: 78,
+    height: 78,
+    borderRadius: 21,
+    marginRight: 18,
+  },
   stageImageLocked: {
     opacity: 0.35,
   },
   stageImage: {
     width: 48,
     height: 48,
+  },
+  desktopStageImage: {
+    width: 62,
+    height: 62,
   },
   stageInfo: {
     flex: 1,
@@ -283,6 +339,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 15,
     color: colors.textPrimary,
+  },
+  desktopStageName: {
+    fontSize: 18,
   },
   currentBadge: {
     fontSize: 10,
@@ -300,10 +359,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '500',
   },
+  desktopStageDesc: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 5,
+  },
   stageLevel: {
     fontSize: 11,
     color: colors.secondaryDark,
     marginTop: 4,
     fontWeight: '700',
+  },
+  desktopStageLevel: {
+    fontSize: 13,
+    marginTop: 7,
   },
 });
