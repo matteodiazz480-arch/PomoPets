@@ -17,15 +17,19 @@ export default function FoodChip({ icon, count, onFeed }: Props) {
     busy.current = true;
     onFeed();
     Animated.sequence([
-      Animated.timing(scale, { toValue: 0.86, duration: 90, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, friction: 4, tension: 120, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 0.94, duration: 90, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 6, tension: 140, useNativeDriver: true }),
     ]).start(() => {
       busy.current = false;
     });
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handlePress}>
+    <TouchableWithoutFeedback
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={`Alimentar con ${icon}. Cantidad: ${count}`}
+    >
       <Animated.View style={[styles.chip, { transform: [{ scale }] }]}>
         <Text style={styles.icon}>{icon}</Text>
         <View style={styles.badge}>
@@ -44,11 +48,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.primaryDark,
+    borderBottomWidth: 4,
+    borderBottomColor: colors.primaryDeep,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 1,
+    shadowOpacity: 0.65,
     shadowRadius: 6,
     elevation: 2,
   },

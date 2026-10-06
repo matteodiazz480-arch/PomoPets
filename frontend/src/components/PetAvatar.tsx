@@ -1,6 +1,6 @@
 import { useIsFocused } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 
 type Props = {
   eyesOpen: any;
@@ -25,6 +25,7 @@ const BLINK_DURATION_MS = 120;
 // breathing scale pulse (always on) and the feed reaction bump (triggered).
 export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal = 0 }: Props) {
   const [blinking, setBlinking] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const imageSize = size * 0.88;
   const breath = useRef(new Animated.Value(0)).current;
   const feedBump = useRef(new Animated.Value(0)).current;
@@ -35,9 +36,24 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
   // would keep breathing/blinking forever in the background.
   const isFocused = useIsFocused();
 
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) setReducedMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReducedMotion);
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
   // Gentle scale-only breathing loop.
   useEffect(() => {
-    if (!isFocused) return;
+    if (!isFocused || reducedMotion) {
+      breath.setValue(0);
+      return;
+    }
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(breath, {
@@ -56,12 +72,17 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
     );
     loop.start();
     return () => loop.stop();
-  }, [breath, isFocused]);
+  }, [breath, isFocused, reducedMotion]);
 
   // Happy little bounce + a floating heart whenever the pet gets fed.
   useEffect(() => {
     if (isFirstFeedSignal.current) {
       isFirstFeedSignal.current = false;
+      return;
+    }
+    if (reducedMotion) {
+      feedBump.setValue(0);
+      sparkle.setValue(0);
       return;
     }
     feedBump.setValue(0);
@@ -77,7 +98,7 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
       useNativeDriver: true,
     }).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feedSignal]);
+  }, [feedSignal, reducedMotion]);
 
   useEffect(() => {
     if (!isFocused) return;

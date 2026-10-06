@@ -1,6 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback } from 'react';
-import { GestureResponderEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  AccessibilityInfo,
+  Animated,
+  GestureResponderEvent,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
 import { playSound, type SoundName } from '../audio/sounds';
 import { colors } from '../theme/colors';
 
@@ -18,6 +25,20 @@ type Props = {
 const ICON_COLOR = { primary: colors.white, secondary: colors.textPrimary, ghost: colors.textSecondary };
 
 export default function PrimaryButton({ label, onPress, variant = 'primary', disabled, iconName, sound = 'tap' }: Props) {
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const pressScale = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) setReducedMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReducedMotion);
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
   const handlePress = useCallback(
     (e: GestureResponderEvent) => {
       if (sound !== 'none') playSound(sound);
@@ -58,16 +79,45 @@ export default function PrimaryButton({ label, onPress, variant = 'primary', dis
     );
   }
 
-  // Solid "sticker" button: flat fill, a bold ink-style outline, and a chunky
-  // darker bottom edge that reads as a pressed-in 3D bevel — a hand-illustrated,
-  // toy-like feel instead of a glossy gradient.
   return (
-    <TouchableOpacity onPress={handlePress} disabled={disabled} activeOpacity={0.8} style={disabled && styles.disabled}>
-      <View style={styles.primary}>
-        <View style={styles.primaryHighlight} pointerEvents="none" />
+    <TouchableOpacity
+      onPress={handlePress}
+      onPressIn={() => {
+        if (reducedMotion) return;
+        Animated.timing(pressScale, {
+          toValue: 0.95,
+          duration: 60,
+          useNativeDriver: true,
+        }).start();
+      }}
+      onPressOut={() => {
+        if (reducedMotion) {
+          pressScale.setValue(1);
+          return;
+        }
+        Animated.sequence([
+          Animated.timing(pressScale, {
+            toValue: 1.04,
+            duration: 80,
+            useNativeDriver: true,
+          }),
+          Animated.spring(pressScale, {
+            toValue: 1,
+            speed: 22,
+            bounciness: 8,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }}
+      disabled={disabled}
+      activeOpacity={0.8}
+      style={disabled && styles.disabled}
+    >
+      <Animated.View style={[styles.primary, { transform: [{ scale: pressScale }] }]}>
+        <Animated.View style={styles.primaryHighlight} pointerEvents="none" />
         {iconEl}
         <Text style={styles.primaryLabel}>{label}</Text>
-      </View>
+      </Animated.View>
     </TouchableOpacity>
   );
 }

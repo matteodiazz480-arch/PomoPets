@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
@@ -14,13 +14,20 @@ type Category = 'backgrounds' | 'food';
 
 export default function ShopScreen() {
   const insets = useSafeAreaInsets();
+  const width = useWindowDimensions().width;
+  const desktop = width >= 900;
+  const wide = width >= 1200;
   const { state, buyBackground, buyFood } = useGame();
   const [category, setCategory] = useState<Category>('backgrounds');
 
   return (
     <View style={styles.root}>
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 110 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          desktop && styles.desktopScroll,
+          { paddingTop: insets.top + 20, paddingBottom: desktop ? 40 : insets.bottom + 110 },
+        ]}
       >
         <View style={styles.header}>
           <Text style={styles.title}>Tienda</Text>
@@ -58,7 +65,7 @@ export default function ShopScreen() {
         {category === 'backgrounds' ? (
           <>
             <Text style={styles.subtitle}>Personaliza el hábitat de tu mascota</Text>
-            <View style={styles.grid}>
+            <View style={[styles.grid, desktop && styles.desktopGrid]}>
               {SHOP_BACKGROUNDS.map((item) => {
                 const owned = state.ownedBackgrounds.includes(item.id);
                 const active = state.activeBackground === item.id;
@@ -66,7 +73,12 @@ export default function ShopScreen() {
                   <TouchableOpacity
                     key={item.id}
                     activeOpacity={0.85}
-                    style={[styles.itemCard, active && styles.itemCardActive]}
+                    style={[
+                      styles.itemCard,
+                      desktop && styles.desktopItemCard,
+                      wide && styles.wideItemCard,
+                      active && styles.itemCardActive,
+                    ]}
                     onPress={() => {
                       if (active) return;
                       const wasOwned = owned;
@@ -98,14 +110,18 @@ export default function ShopScreen() {
         ) : (
           <>
             <Text style={styles.subtitle}>Snacks y pociones para cuidar a tu mascota</Text>
-            <View style={styles.grid}>
+            <View style={[styles.grid, desktop && styles.desktopGrid]}>
               {SHOP_FOODS.map((item) => {
                 const owned = state.inventory[item.id] ?? 0;
                 return (
                   <TouchableOpacity
                     key={item.id}
                     activeOpacity={0.85}
-                    style={styles.itemCard}
+                    style={[
+                      styles.itemCard,
+                      desktop && styles.desktopItemCard,
+                      wide && styles.wideItemCard,
+                    ]}
                     onPress={() => {
                       const success = buyFood(item.id, item.price);
                       if (!success) playSound('denied');
@@ -147,7 +163,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
   },
   scroll: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
     paddingHorizontal: 20,
+  },
+  desktopScroll: {
+    maxWidth: 1220,
+    paddingHorizontal: 40,
   },
   header: {
     flexDirection: 'row',
@@ -155,22 +178,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '800',
+    letterSpacing: 0,
     color: colors.textPrimary,
   },
   coinPill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 20,
+    borderRadius: 18,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: colors.border,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.65,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 2,
   },
   coinIconBubble: { marginRight: 6 },
   coinValue: { fontWeight: '700', color: colors.textPrimary },
@@ -182,23 +208,32 @@ const styles = StyleSheet.create({
   },
   segmentWrap: {
     flexDirection: 'row',
-    backgroundColor: colors.border,
-    borderRadius: 16,
-    padding: 4,
+    backgroundColor: '#F2E4D5',
+    borderRadius: 18,
+    padding: 5,
     marginTop: 18,
+    marginBottom: 4,
+    borderWidth: 1.5,
+    borderColor: colors.border,
   },
   segmentItem: {
     flex: 1,
-    paddingVertical: 9,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingVertical: 8,
     borderRadius: 12,
     alignItems: 'center',
   },
   segmentItemActive: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.primaryDark,
+    borderBottomWidth: 4,
+    borderBottomColor: colors.primaryDeep,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 1,
-    shadowRadius: 6,
+    shadowRadius: 5,
     elevation: 2,
   },
   segmentLabel: {
@@ -207,13 +242,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   segmentLabelActive: {
-    color: colors.textPrimary,
+    color: colors.white,
     fontWeight: '800',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 14,
+    gap: 12,
+  },
+  desktopGrid: {
+    gap: 16,
   },
   itemCard: {
     width: '47%',
@@ -223,19 +261,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.border,
+    borderBottomWidth: 4,
+    borderBottomColor: '#E6D5BF',
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 1,
-    shadowRadius: 12,
+    shadowRadius: 10,
     elevation: 4,
   },
+  desktopItemCard: {
+    width: '47%',
+    padding: 18,
+    borderRadius: 26,
+  },
+  wideItemCard: {
+    width: '31.5%',
+  },
   itemCardActive: {
-    borderColor: colors.primary,
+    borderColor: colors.primaryDark,
+    borderBottomColor: colors.primaryDeep,
   },
   itemPreview: {
     width: '100%',
-    height: 90,
+    height: 96,
     borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.8)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -246,7 +297,7 @@ const styles = StyleSheet.create({
   itemName: {
     fontWeight: '700',
     color: colors.textPrimary,
-    fontSize: 13,
+    fontSize: 14,
     marginBottom: 6,
     textAlign: 'center',
   },
@@ -268,12 +319,14 @@ const styles = StyleSheet.create({
   },
   foodPreview: {
     width: '100%',
-    height: 90,
+    height: 96,
     borderRadius: 16,
     backgroundColor: colors.cardAlt,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
+    borderWidth: 2,
+    borderColor: colors.border,
   },
   ownedBadge: {
     position: 'absolute',

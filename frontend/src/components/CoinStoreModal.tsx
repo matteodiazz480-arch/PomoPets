@@ -97,6 +97,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
+    borderTopWidth: 2,
+    borderColor: colors.border,
     paddingTop: 10,
     paddingHorizontal: 22,
     paddingBottom: 26,
@@ -139,7 +141,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
     textAlign: 'center',
   },
@@ -163,8 +165,10 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 2,
     borderColor: colors.border,
+    borderBottomWidth: 4,
+    borderBottomColor: colors.border,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 3,
@@ -231,7 +235,7 @@ const styles = StyleSheet.create({
   },
   buyButtonText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.white,
   },
   disclaimer: {

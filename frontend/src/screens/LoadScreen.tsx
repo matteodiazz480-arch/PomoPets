@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FittedImageBackground from '../components/FittedImageBackground';
 import { colors } from '../theme/colors';
@@ -14,6 +14,7 @@ type Props = {
 
 export default function LoadScreen({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
+  const desktop = useWindowDimensions().width >= 900;
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -33,15 +34,26 @@ export default function LoadScreen({ onFinish }: Props) {
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
   return (
-    <FittedImageBackground source={LOAD_IMAGE} aspectRatio={1536 / 2752} backgroundColor={colors.appBg}>
+    <FittedImageBackground
+      source={LOAD_IMAGE}
+      aspectRatio={1536 / 2752}
+      backgroundColor={colors.appBg}
+      coverOnDesktop
+    >
       <View style={styles.root}>
         <LinearGradient
           colors={['rgba(20,24,46,0)', 'rgba(20,24,46,0.15)', 'rgba(20,24,46,0.72)']}
           locations={[0, 0.55, 1]}
           style={styles.scrim}
         />
-        <View style={[styles.bottomArea, { paddingBottom: insets.bottom + 48 }]}>
-          <Text style={styles.brand}>PomoPets</Text>
+        <View
+          style={[
+            styles.bottomArea,
+            desktop && styles.desktopBottomArea,
+            { paddingBottom: insets.bottom + 48 },
+          ]}
+        >
+          <Text style={[styles.brand, desktop && styles.desktopBrand]}>PomoPets</Text>
           <View style={styles.track}>
             <Animated.View style={[styles.fill, { width }]} />
           </View>
@@ -64,6 +76,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     alignItems: 'center',
   },
+  desktopBottomArea: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
+  },
   brand: {
     fontSize: 26,
     fontWeight: '800',
@@ -72,6 +89,9 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
+  },
+  desktopBrand: {
+    fontSize: 34,
   },
   track: {
     width: '100%',

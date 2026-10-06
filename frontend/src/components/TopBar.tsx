@@ -10,13 +10,21 @@ type Props = {
   coins: number;
   streak: number;
   onAddCoins?: () => void;
+  desktop?: boolean;
 };
 
-export default function TopBar({ coins, streak, onAddCoins }: Props) {
+export default function TopBar({ coins, streak, onAddCoins, desktop = false }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.wrap, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
+    <View
+      style={[
+        styles.wrap,
+        desktop && styles.desktopWrap,
+        { paddingTop: insets.top + 8 },
+      ]}
+      pointerEvents="box-none"
+    >
       <View style={styles.coinGroup}>
         <View style={styles.pill}>
           <CoinIcon size={24} />
@@ -52,12 +60,16 @@ const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    width: '100%',
+    maxWidth: 440,
+    alignSelf: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     zIndex: 10,
+  },
+  desktopWrap: {
+    maxWidth: 1160,
   },
   coinGroup: {
     flexDirection: 'row',
@@ -75,11 +87,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.65,
+    shadowRadius: 8,
+    elevation: 2,
   },
   streakPill: {
     backgroundColor: colors.streakBg,

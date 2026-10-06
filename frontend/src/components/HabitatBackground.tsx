@@ -17,7 +17,7 @@ type Props = {
 // Each shop theme re-tints the same photo with a soft color-grade overlay,
 // so the real background art always shows through.
 const THEME_OVERLAY: Record<BackgroundThemeId, { colors: [string, string, string]; opacity: number }> = {
-  sky: { colors: ['#FFFFFF', '#FFFFFF', '#FFFFFF'], opacity: 0 },
+  sky: { colors: ['#D7F0FF', '#EAF6FF', '#F5FBFF'], opacity: 0 },
   forest: { colors: ['#DFF3D8', '#DFF3D8', '#CDECC9'], opacity: 0.28 },
   sunset: { colors: ['#FFD3B0', '#FFB5A7', '#F5A9C6'], opacity: 0.32 },
   night: { colors: ['#2E3568', '#3A3F73', '#4B4A8A'], opacity: 0.62 },

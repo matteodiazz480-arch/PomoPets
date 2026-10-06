@@ -54,6 +54,8 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
           style={[styles.addButton, draft.trim().length === 0 && styles.addButtonDisabled]}
           activeOpacity={0.8}
           disabled={draft.trim().length === 0}
+          accessibilityRole="button"
+          accessibilityLabel="Agregar tarea"
           onPress={handleAdd}
         >
           <View style={styles.addButtonHighlight} pointerEvents="none" />
@@ -70,6 +72,9 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
               <TouchableOpacity
                 style={styles.checkbox}
                 activeOpacity={0.7}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: task.done }}
+                accessibilityLabel={task.text}
                 onPress={() => {
                   playSound('tap');
                   onToggle(task.id);
@@ -108,13 +113,15 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
     marginTop: 18,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
+    borderBottomWidth: 5,
+    borderBottomColor: '#E6D5BF',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 1,
-    shadowRadius: 14,
-    elevation: 5,
+    shadowRadius: 12,
+    elevation: 4,
   },
   header: {
     flexDirection: 'row',
@@ -124,7 +131,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
   },
   countPill: {
@@ -171,9 +178,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.primaryDeep,
     overflow: 'hidden',
   },
-  addButtonDisabled: {
-    opacity: 0.5,
-  },
   addButtonHighlight: {
     position: 'absolute',
     top: 0,
@@ -183,6 +187,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.28)',
     borderTopLeftRadius: 19,
     borderTopRightRadius: 19,
+  },
+  addButtonDisabled: {
+    opacity: 0.5,
   },
   emptyText: {
     fontSize: 12,
@@ -208,7 +215,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: colors.border,
     backgroundColor: colors.cardAlt,
     alignItems: 'center',
