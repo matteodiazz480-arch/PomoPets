@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { NavigationContainer } from '@react-navigation/native';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
+import HabitatBackground from '../components/HabitatBackground';
+import { useGame } from '../context/GameContext';
 import HabitatScreen from '../screens/HabitatScreen';
 import PetCareScreen from '../screens/PetCareScreen';
 import ProgressScreen from '../screens/ProgressScreen';
@@ -90,33 +92,50 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
 export default function RootNavigator() {
   const desktop = useWindowDimensions().width >= 900;
+  const { state } = useGame();
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        // Suspends re-rendering of tabs you're not looking at (bottom-tabs v7
-        // has no unmountOnBlur, this is its replacement). The Pomodoro timer
-        // itself lives in GameContext above this navigator, so it's
-        // unaffected either way — but each tab's PetAvatar additionally
-        // checks useIsFocused() itself to stop its own animation loops when
-        // not visible, since freezing alone doesn't halt already-running
-        // native animations or timers.
-        screenOptions={{
-          headerShown: false,
-          freezeOnBlur: true,
-          sceneStyle: desktop ? { marginLeft: SIDEBAR_WIDTH } : undefined,
-        }}
-        tabBar={(props) => <CustomTabBar {...props} />}
+    <View style={styles.root}>
+      {desktop && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <HabitatBackground theme={state.activeBackground} />
+        </View>
+      )}
+      <NavigationContainer
+        theme={
+          desktop
+            ? { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: 'transparent' } }
+            : DefaultTheme
+        }
       >
-        <Tab.Screen name="Habitat" component={HabitatScreen} />
-        <Tab.Screen name="Mascota" component={PetCareScreen} />
-        <Tab.Screen name="Tienda" component={ShopScreen} />
-        <Tab.Screen name="Progreso" component={ProgressScreen} />
-      </Tab.Navigator>
-    </NavigationContainer>
+        <Tab.Navigator
+          // Suspends re-rendering of tabs you're not looking at (bottom-tabs v7
+          // has no unmountOnBlur, this is its replacement). The Pomodoro timer
+          // itself lives in GameContext above this navigator, so it's
+          // unaffected either way — but each tab's PetAvatar additionally
+          // checks useIsFocused() itself to stop its own animation loops when
+          // not visible, since freezing alone doesn't halt already-running
+          // native animations or timers.
+          screenOptions={{
+            headerShown: false,
+            freezeOnBlur: true,
+            sceneStyle: desktop ? { marginLeft: SIDEBAR_WIDTH, backgroundColor: 'transparent' } : undefined,
+          }}
+          tabBar={(props) => <CustomTabBar {...props} />}
+        >
+          <Tab.Screen name="Habitat" component={HabitatScreen} />
+          <Tab.Screen name="Mascota" component={PetCareScreen} />
+          <Tab.Screen name="Tienda" component={ShopScreen} />
+          <Tab.Screen name="Progreso" component={ProgressScreen} />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   tabBarWrap: {
     position: 'absolute',
     left: 0,
@@ -158,21 +177,21 @@ const styles = StyleSheet.create({
     maxWidth: undefined,
     alignItems: 'stretch',
     justifyContent: 'flex-start',
-    backgroundColor: '#FFFDF9',
+    backgroundColor: 'rgba(255, 253, 249, 0.84)',
     borderRadius: 0,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 18,
     borderWidth: 0,
     borderRightWidth: 1,
-    borderRightColor: colors.border,
+    borderRightColor: 'rgba(240, 226, 208, 0.8)',
     borderBottomWidth: 0,
     shadowOpacity: 0,
     elevation: 0,
   },
   brand: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 28,
+    paddingVertical: 12,
+    marginBottom: 30,
   },
   brandTitle: {
     color: colors.textPrimary,
@@ -198,12 +217,12 @@ const styles = StyleSheet.create({
   },
   desktopTabItem: {
     flex: 0,
-    minHeight: 58,
+    minHeight: 64,
     flexDirection: 'row',
     justifyContent: 'flex-start',
     paddingHorizontal: 14,
     paddingVertical: 10,
-    marginBottom: 6,
+    marginBottom: 10,
     borderRadius: 16,
     gap: 12,
   },

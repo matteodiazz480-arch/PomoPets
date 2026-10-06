@@ -42,10 +42,12 @@ export default function HabitatScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const desktop = width >= 900;
-  const timerSize = desktop && width >= 1050 ? 280 : desktop ? 220 : height <= 900 ? 160 : 184;
+  const timerSize = desktop
+    ? Math.min(width >= 1050 ? 280 : 220, height * 0.31)
+    : height <= 900 ? 160 : 184;
   const largeControls = width >= 1100;
   const petSize = desktop
-    ? Math.min(500, height * 0.68, (width - 356) * 0.52)
+    ? Math.min(460, height * 0.52, (width - 356) * 0.45)
     : Math.min(266, height * 0.38, width * 0.82);
   const {
     state,
@@ -97,7 +99,7 @@ export default function HabitatScreen() {
   );
 
   return (
-    <HabitatBackground theme={state.activeBackground}>
+    <HabitatBackground theme={state.activeBackground} transparentDesktop={desktop}>
       <TopBar coins={state.coins} streak={state.streak} onAddCoins={() => setCoinStoreVisible(true)} desktop={desktop} />
 
       <ScrollView
@@ -105,7 +107,7 @@ export default function HabitatScreen() {
           styles.scroll,
           desktop && styles.desktopScroll,
           {
-            paddingTop: insets.top + (desktop ? 92 : height <= 900 ? 32 : 52),
+            paddingTop: insets.top + (desktop ? 50 : height <= 900 ? 32 : 52),
             paddingBottom: desktop ? 40 : insets.bottom + 110,
           },
         ]}
@@ -262,12 +264,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   desktopScroll: {
-    maxWidth: 1320,
-    paddingHorizontal: 40,
+    maxWidth: 1480,
+    paddingHorizontal: 48,
     alignItems: 'stretch',
   },
   desktopHeading: {
-    marginBottom: 22,
+    marginBottom: 14,
   },
   desktopEyebrow: {
     color: colors.secondaryDark,
@@ -287,22 +289,23 @@ const styles = StyleSheet.create({
   desktopDashboard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 28,
+    gap: 44,
   },
   petSection: {
     alignItems: 'center',
     marginBottom: 4,
   },
   desktopPetSection: {
-    flex: 0.9,
+    flex: 1,
     minWidth: 0,
-    paddingVertical: 24,
+    paddingVertical: 12,
+    transform: [{ translateX: -36 }],
   },
   focusColumn: {
     width: '100%',
   },
   desktopFocusColumn: {
-    flex: 1.1,
+    flex: 1,
     minWidth: 0,
   },
   bubbleWrap: {
@@ -313,7 +316,7 @@ const styles = StyleSheet.create({
     transform: [{ translateX: 14 }],
   },
   desktopPetCharacter: {
-    transform: [{ translateX: 28 }],
+    transform: [{ translateX: 0 }],
   },
   petNameRow: {
     flexDirection: 'row',
@@ -356,7 +359,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   desktopCard: {
-    paddingVertical: 30,
+    paddingVertical: 20,
     paddingHorizontal: 34,
     borderRadius: 30,
   },
@@ -420,7 +423,7 @@ const styles = StyleSheet.create({
   desktopControlsRow: {
     width: '100%',
     justifyContent: 'center',
-    minHeight: 64,
+    minHeight: 58,
   },
   desktopDurationLabel: {
     fontSize: 15,

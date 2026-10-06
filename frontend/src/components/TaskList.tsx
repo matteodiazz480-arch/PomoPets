@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   desktopCard: {
-    paddingVertical: 24,
+    paddingVertical: 18,
     paddingHorizontal: 26,
     borderRadius: 28,
   },
