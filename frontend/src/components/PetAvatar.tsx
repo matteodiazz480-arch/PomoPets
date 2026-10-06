@@ -26,7 +26,7 @@ const BLINK_DURATION_MS = 120;
 export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal = 0 }: Props) {
   const [blinking, setBlinking] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const imageSize = size * 0.88;
+  const imageWidth = size * (677 / 369);
   const breath = useRef(new Animated.Value(0)).current;
   const feedBump = useRef(new Animated.Value(0)).current;
   const sparkle = useRef(new Animated.Value(0)).current;
@@ -136,17 +136,30 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
 
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
-      <Animated.View style={{ transform: [{ scale: Animated.multiply(breathScale, bumpScale) }] }}>
-        <Image source={eyesOpen} style={{ width: imageSize, height: imageSize }} resizeMode="contain" />
+      <Animated.View
+        style={[
+          styles.petImageFrame,
+          { width: size, height: size },
+          { transform: [{ scale: Animated.multiply(breathScale, bumpScale) }] },
+        ]}
+      >
+        <Image
+          source={eyesOpen}
+          style={[
+            styles.petSprite,
+            { width: imageWidth, height: size, left: (size - imageWidth) / 2 },
+          ]}
+          resizeMode="contain"
+        />
         <Image
           source={eyesClosed}
           style={[
             styles.closedEyes,
             {
-              width: imageSize,
-              height: imageSize,
+              width: imageWidth,
+              height: size,
               top: 0,
-              left: 0,
+              left: (size - imageWidth) / 2,
               opacity: blinking ? 1 : 0,
             },
           ]}
@@ -171,6 +184,14 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  petImageFrame: {
+    position: 'absolute',
+    overflow: 'hidden',
+  },
+  petSprite: {
+    position: 'absolute',
+    top: 0,
   },
   closedEyes: {
     position: 'absolute',

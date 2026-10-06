@@ -10,11 +10,12 @@ type Props = {
   onAdd: (text: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  desktop?: boolean;
 };
 
 const MAX_LENGTH = 60;
 
-export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
+export default function TaskList({ tasks, onAdd, onToggle, onDelete, desktop = false }: Props) {
   const [draft, setDraft] = useState('');
   const doneCount = tasks.filter((t) => t.done).length;
 
@@ -27,9 +28,9 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, desktop && styles.desktopCard]}>
       <View style={styles.header}>
-        <Text style={styles.title}>📝 Tareas de hoy</Text>
+        <Text style={[styles.title, desktop && styles.desktopTitle]}>📝 Tareas de hoy</Text>
         {tasks.length > 0 && (
           <View style={styles.countPill}>
             <Text style={styles.countText}>
@@ -46,7 +47,7 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
           maxLength={MAX_LENGTH}
           placeholder="Ej: Repasar Álgebra"
           placeholderTextColor={colors.textSecondary}
-          style={styles.input}
+          style={[styles.input, desktop && styles.desktopInput]}
           returnKeyType="done"
           onSubmitEditing={handleAdd}
         />
@@ -64,7 +65,9 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
       </View>
 
       {tasks.length === 0 ? (
-        <Text style={styles.emptyText}>Anota los temas que quieres estudiar hoy y márcalos al terminar cada bloque.</Text>
+        <Text style={[styles.emptyText, desktop && styles.desktopEmptyText]}>
+          Anota los temas que quieres estudiar hoy y márcalos al terminar cada bloque.
+        </Text>
       ) : (
         <View style={styles.list}>
           {tasks.map((task) => (
@@ -123,6 +126,11 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
+  desktopCard: {
+    paddingVertical: 24,
+    paddingHorizontal: 26,
+    borderRadius: 28,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -133,6 +141,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.textPrimary,
+  },
+  desktopTitle: {
+    fontSize: 19,
   },
   countPill: {
     backgroundColor: colors.cardAlt,
@@ -165,6 +176,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
   },
+  desktopInput: {
+    minHeight: 52,
+    fontSize: 16,
+    paddingHorizontal: 18,
+  },
   addButton: {
     width: 42,
     height: 42,
@@ -196,6 +212,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.textSecondary,
     lineHeight: 18,
+  },
+  desktopEmptyText: {
+    fontSize: 15,
+    lineHeight: 23,
   },
   list: {
     gap: 4,

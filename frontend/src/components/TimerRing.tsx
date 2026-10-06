@@ -11,7 +11,7 @@ type Props = {
 };
 
 export default function TimerRing({ progress, label, sublabel, size = 180 }: Props) {
-  const stroke = 12;
+  const stroke = size >= 240 ? 15 : 12;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - progress);
@@ -41,8 +41,8 @@ export default function TimerRing({ progress, label, sublabel, size = 180 }: Pro
         />
       </Svg>
       <View style={styles.center}>
-        <Text style={styles.time}>{label}</Text>
-        <Text style={styles.sub}>{sublabel}</Text>
+        <Text style={[styles.time, size >= 240 && styles.largeTime]}>{label}</Text>
+        <Text style={[styles.sub, size >= 240 && styles.largeSub]}>{sublabel}</Text>
       </View>
     </View>
   );
@@ -63,10 +63,17 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontVariant: ['tabular-nums'],
   },
+  largeTime: {
+    fontSize: 48,
+  },
   sub: {
     fontSize: 13,
     color: colors.textSecondary,
     fontWeight: '600',
     marginTop: 2,
+  },
+  largeSub: {
+    fontSize: 16,
+    marginTop: 5,
   },
 });

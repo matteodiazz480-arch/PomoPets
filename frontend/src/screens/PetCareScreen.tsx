@@ -22,9 +22,11 @@ export default function PetCareScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const desktop = width >= 900;
-  const petSize = Math.min(300, desktop ? height * 0.46 : width * 0.76, height * 0.36);
+  const petSize = desktop
+    ? Math.min(500, height * 0.66, (width - 328) * 0.5)
+    : Math.min(340, width * 0.86, height * 0.43);
   const statTrackWidth = desktop
-    ? Math.max(150, Math.min(340, (width - 312) * 0.42 - 56))
+    ? Math.max(120, Math.min(340, (width - 328) * 0.42 - 56))
     : Math.min(520, width) - SHEET_PADDING_H * 2;
   const { state, level, feedPet, setPetName } = useGame();
   const [feedSignal, setFeedSignal] = useState(0);
@@ -42,8 +44,8 @@ export default function PetCareScreen() {
   return (
     <FittedImageBackground source={ROOM_BACKGROUND} aspectRatio={1536 / 2752} backgroundColor={colors.appBg}>
       <View style={[styles.content, desktop && styles.desktopContent]}>
-        <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
-          <Text style={styles.headerTitle}>Mi Mascota</Text>
+        <View style={[styles.header, desktop && styles.desktopHeader, { paddingTop: insets.top + 14 }]}>
+          <Text style={[styles.headerTitle, desktop && styles.desktopHeaderTitle]}>Mi Mascota</Text>
         </View>
 
         <View style={[styles.desktopLayout, desktop && styles.desktopLayoutWide]}>
@@ -77,9 +79,11 @@ export default function PetCareScreen() {
 
             <View style={styles.foodDivider} />
 
-            <Text style={styles.foodTitle}>Alimentar</Text>
+            <Text style={[styles.foodTitle, desktop && styles.desktopFoodTitle]}>Alimentar</Text>
             {ownedFoods.length === 0 ? (
-              <Text style={styles.foodEmpty}>Compra comida en la Tienda para alimentar a tu mascota</Text>
+              <Text style={[styles.foodEmpty, desktop && styles.desktopFoodEmpty]}>
+                Compra comida en la Tienda para alimentar a tu mascota
+              </Text>
             ) : (
               <View style={styles.foodChipsRow}>
                 {ownedFoods.map((food) => (
@@ -117,6 +121,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     paddingBottom: 24,
   },
+  desktopHeader: {
+    alignItems: 'flex-start',
+    paddingBottom: 0,
+    marginBottom: 8,
+  },
   header: {
     alignItems: 'center',
     paddingBottom: 6,
@@ -126,6 +135,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.2,
     color: colors.textPrimary,
+  },
+  desktopHeaderTitle: {
+    fontSize: 28,
   },
   stageArea: {
     flex: 1,
@@ -186,10 +198,10 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   desktopSheet: {
-    width: 440,
-    maxWidth: '42%',
-    paddingTop: 26,
-    paddingHorizontal: 28,
+    width: 520,
+    maxWidth: '46%',
+    paddingTop: 32,
+    paddingHorizontal: 34,
     borderRadius: 30,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -217,10 +229,18 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: 12,
   },
+  desktopFoodTitle: {
+    fontSize: 19,
+    marginBottom: 16,
+  },
   foodEmpty: {
     fontSize: 12,
     fontWeight: '500',
     color: colors.textSecondary,
+  },
+  desktopFoodEmpty: {
+    fontSize: 15,
+    lineHeight: 23,
   },
   foodChipsRow: {
     flexDirection: 'row',

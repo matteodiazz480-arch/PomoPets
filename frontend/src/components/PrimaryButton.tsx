@@ -20,11 +20,20 @@ type Props = {
   disabled?: boolean;
   iconName?: IconName;
   sound?: SoundName | 'none';
+  size?: 'default' | 'large';
 };
 
 const ICON_COLOR = { primary: colors.white, secondary: colors.textPrimary, ghost: colors.textSecondary };
 
-export default function PrimaryButton({ label, onPress, variant = 'primary', disabled, iconName, sound = 'tap' }: Props) {
+export default function PrimaryButton({
+  label,
+  onPress,
+  variant = 'primary',
+  disabled,
+  iconName,
+  sound = 'tap',
+  size = 'default',
+}: Props) {
   const [reducedMotion, setReducedMotion] = useState(false);
   const pressScale = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -48,7 +57,12 @@ export default function PrimaryButton({ label, onPress, variant = 'primary', dis
   );
 
   const iconEl = iconName ? (
-    <Ionicons name={iconName} size={variant === 'ghost' ? 15 : 18} color={ICON_COLOR[variant]} style={styles.icon} />
+    <Ionicons
+      name={iconName}
+      size={variant === 'ghost' ? (size === 'large' ? 18 : 15) : size === 'large' ? 21 : 18}
+      color={ICON_COLOR[variant]}
+      style={styles.icon}
+    />
   ) : null;
 
   if (variant === 'ghost') {
@@ -56,11 +70,11 @@ export default function PrimaryButton({ label, onPress, variant = 'primary', dis
       <TouchableOpacity
         onPress={handlePress}
         disabled={disabled}
-        style={[styles.ghost, disabled && styles.disabled]}
+        style={[styles.ghost, size === 'large' && styles.largeGhost, disabled && styles.disabled]}
         activeOpacity={0.7}
       >
         {iconEl}
-        <Text style={styles.ghostLabel}>{label}</Text>
+        <Text style={[styles.ghostLabel, size === 'large' && styles.largeGhostLabel]}>{label}</Text>
       </TouchableOpacity>
     );
   }
@@ -70,11 +84,11 @@ export default function PrimaryButton({ label, onPress, variant = 'primary', dis
       <TouchableOpacity
         onPress={handlePress}
         disabled={disabled}
-        style={[styles.secondary, disabled && styles.disabled]}
+        style={[styles.secondary, size === 'large' && styles.largeSecondary, disabled && styles.disabled]}
         activeOpacity={0.8}
       >
         {iconEl}
-        <Text style={styles.secondaryLabel}>{label}</Text>
+        <Text style={[styles.secondaryLabel, size === 'large' && styles.largeSecondaryLabel]}>{label}</Text>
       </TouchableOpacity>
     );
   }
@@ -113,10 +127,16 @@ export default function PrimaryButton({ label, onPress, variant = 'primary', dis
       activeOpacity={0.8}
       style={disabled && styles.disabled}
     >
-      <Animated.View style={[styles.primary, { transform: [{ scale: pressScale }] }]}>
+      <Animated.View
+        style={[
+          styles.primary,
+          size === 'large' && styles.largePrimary,
+          { transform: [{ scale: pressScale }] },
+        ]}
+      >
         <Animated.View style={styles.primaryHighlight} pointerEvents="none" />
         {iconEl}
-        <Text style={styles.primaryLabel}>{label}</Text>
+        <Text style={[styles.primaryLabel, size === 'large' && styles.largeLabel]}>{label}</Text>
       </Animated.View>
     </TouchableOpacity>
   );
@@ -160,6 +180,22 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
   },
+  largePrimary: {
+    minWidth: 290,
+    minHeight: 64,
+    paddingVertical: 18,
+    paddingHorizontal: 34,
+    borderRadius: 28,
+  },
+  largeLabel: {
+    fontSize: 19,
+  },
+  largeSecondaryLabel: {
+    fontSize: 17,
+  },
+  largeGhostLabel: {
+    fontSize: 16,
+  },
   secondary: {
     flexDirection: 'row',
     paddingVertical: 14,
@@ -170,6 +206,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 2,
     borderColor: colors.border,
+  },
+  largeSecondary: {
+    minWidth: 190,
+    minHeight: 60,
+    paddingVertical: 17,
+    paddingHorizontal: 30,
   },
   secondaryLabel: {
     color: colors.textPrimary,
@@ -182,6 +224,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  largeGhost: {
+    minHeight: 56,
+    paddingVertical: 14,
+    paddingHorizontal: 22,
   },
   ghostLabel: {
     color: colors.textSecondary,

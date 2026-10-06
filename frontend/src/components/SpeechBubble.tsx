@@ -4,9 +4,10 @@ import { colors } from '../theme/colors';
 
 type Props = {
   text: string;
+  large?: boolean;
 };
 
-export default function SpeechBubble({ text }: Props) {
+export default function SpeechBubble({ text, large = false }: Props) {
   const pop = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -18,9 +19,9 @@ export default function SpeechBubble({ text }: Props) {
   const opacity = pop;
 
   return (
-    <Animated.View style={[styles.wrap, { opacity, transform: [{ scale }] }]}>
-      <View style={styles.bubble}>
-        <Text style={styles.text}>{text}</Text>
+    <Animated.View style={[styles.wrap, large && styles.largeWrap, { opacity, transform: [{ scale }] }]}>
+      <View style={[styles.bubble, large && styles.largeBubble]}>
+        <Text style={[styles.text, large && styles.largeText]}>{text}</Text>
       </View>
       <View style={styles.tailShadow} />
       <View style={styles.tail} />
@@ -51,6 +52,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
     textAlign: 'center',
+  },
+  largeWrap: {
+    maxWidth: 360,
+  },
+  largeBubble: {
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 22,
+  },
+  largeText: {
+    fontSize: 16,
   },
   tailShadow: {
     width: 0,

@@ -6,19 +6,20 @@ type Props = {
   level: number;
   xpIntoLevel: number;
   xpToNext: number;
+  large?: boolean;
 };
 
-export default function XPBar({ level, xpIntoLevel, xpToNext }: Props) {
+export default function XPBar({ level, xpIntoLevel, xpToNext, large = false }: Props) {
   const pct = Math.min(1, xpIntoLevel / xpToNext);
   return (
-    <View style={styles.wrap}>
-      <View style={styles.levelBadge}>
-        <Text style={styles.levelText}>Nv {level}</Text>
+    <View style={[styles.wrap, large && styles.largeWrap]}>
+      <View style={[styles.levelBadge, large && styles.largeBadge]}>
+        <Text style={[styles.levelText, large && styles.largeLevelText]}>Nv {level}</Text>
       </View>
-      <View style={styles.track}>
+      <View style={[styles.track, large && styles.largeTrack]}>
         <View style={[styles.fill, { width: `${pct * 100}%` }]} />
       </View>
-      <Text style={styles.xpText}>
+      <Text style={[styles.xpText, large && styles.largeXpText]}>
         {xpIntoLevel}/{xpToNext} XP
       </Text>
     </View>
@@ -60,5 +61,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     minWidth: 62,
     textAlign: 'right',
+  },
+  largeWrap: {
+    gap: 12,
+  },
+  largeBadge: {
+    borderRadius: 15,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  largeLevelText: {
+    fontSize: 15,
+  },
+  largeTrack: {
+    height: 14,
+  },
+  largeXpText: {
+    fontSize: 14,
+    minWidth: 78,
   },
 });

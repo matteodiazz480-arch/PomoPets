@@ -42,9 +42,11 @@ export default function HabitatScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const desktop = width >= 900;
+  const timerSize = desktop && width >= 1050 ? 280 : desktop ? 220 : height <= 900 ? 160 : 184;
+  const largeControls = width >= 1100;
   const petSize = desktop
-    ? Math.min(width >= 1200 ? 480 : 360, height * (width >= 1200 ? 0.62 : 0.48), (width - 232) * (width >= 1200 ? 0.42 : 0.48))
-    : Math.min(height <= 900 ? 225 : 240, width * 0.62);
+    ? Math.min(500, height * 0.68, (width - 356) * 0.52)
+    : Math.min(250, height * 0.35, width * 0.72);
   const {
     state,
     level,
@@ -118,25 +120,25 @@ export default function HabitatScreen() {
         <View style={[styles.dashboard, desktop && styles.desktopDashboard]}>
           <View style={[styles.petSection, desktop && styles.desktopPetSection]}>
             <View style={styles.bubbleWrap}>
-              <SpeechBubble text={phrase} />
+              <SpeechBubble text={phrase} large={desktop} />
             </View>
             <TouchableOpacity
               style={styles.petNameRow}
               activeOpacity={0.7}
               onPress={() => setRenameVisible(true)}
             >
-              <Text style={styles.petName}>{displayName}</Text>
+              <Text style={[styles.petName, desktop && styles.desktopPetName]}>{displayName}</Text>
               <Ionicons name="pencil" size={14} color={colors.textSecondary} style={styles.petNameIcon} />
             </TouchableOpacity>
             <PetAvatar eyesOpen={stage.eyesOpen} eyesClosed={stage.eyesClosed} size={petSize} />
             <View style={styles.xpBarWrap}>
-              <XPBar level={level} xpIntoLevel={xpIntoLevel} xpToNext={xpToNext} />
+              <XPBar level={level} xpIntoLevel={xpIntoLevel} xpToNext={xpToNext} large={desktop} />
             </View>
           </View>
 
           <View style={[styles.focusColumn, desktop && styles.desktopFocusColumn]}>
             <View style={[styles.card, desktop && styles.desktopCard]}>
-              <Text style={styles.phaseLabel}>
+              <Text style={[styles.phaseLabel, desktop && styles.desktopPhaseLabel]}>
                 {phase === 'idle' && 'Listo para estudiar'}
                 {phase === 'focus' && '🎯 Enfoque en curso'}
                 {phase === 'break' && '☕ Descanso'}
@@ -146,7 +148,7 @@ export default function HabitatScreen() {
                 progress={phase === 'idle' ? 0 : progress}
                 label={formatTime(secondsLeft)}
                 sublabel={phase === 'break' ? 'Descanso' : `${state.pomodoroMinutes} min sesión`}
-                size={desktop ? 220 : height <= 900 ? 160 : 184}
+                size={timerSize}
               />
 
               {phase === 'idle' && (
@@ -154,7 +156,11 @@ export default function HabitatScreen() {
                   {DURATIONS.map((d) => (
                     <TouchableOpacity
                       key={d}
-                      style={[styles.durationOption, state.pomodoroMinutes === d && styles.durationOptionActive]}
+                      style={[
+                        styles.durationOption,
+                        desktop && styles.desktopDurationOption,
+                        state.pomodoroMinutes === d && styles.durationOptionActive,
+                      ]}
                       accessibilityRole="button"
                       accessibilityState={{ selected: state.pomodoroMinutes === d }}
                       onPress={() => {
@@ -164,7 +170,13 @@ export default function HabitatScreen() {
                       }}
                       activeOpacity={0.75}
                     >
-                      <Text style={[styles.durationLabel, state.pomodoroMinutes === d && styles.durationLabelActive]}>
+                      <Text
+                        style={[
+                          styles.durationLabel,
+                          desktop && styles.desktopDurationLabel,
+                          state.pomodoroMinutes === d && styles.durationLabelActive,
+                        ]}
+                      >
                         {d} min
                       </Text>
                     </TouchableOpacity>
@@ -172,24 +184,52 @@ export default function HabitatScreen() {
                 </View>
               )}
 
-              <View style={styles.controlsRow}>
+              <View style={[styles.controlsRow, desktop && styles.desktopControlsRow]}>
                 {phase === 'idle' && (
-                  <PrimaryButton label="Iniciar Pomodoro" iconName="play" onPress={startFocus} />
+                  <PrimaryButton
+                    label="Iniciar Pomodoro"
+                    iconName="play"
+                    size={largeControls ? 'large' : 'default'}
+                    onPress={startFocus}
+                  />
                 )}
                 {phase !== 'idle' && isRunning && (
-                  <PrimaryButton label="Pausar" iconName="pause" variant="secondary" onPress={pause} />
+                  <PrimaryButton
+                    label="Pausar"
+                    iconName="pause"
+                    variant="secondary"
+                    size={largeControls ? 'large' : 'default'}
+                    onPress={pause}
+                  />
                 )}
                 {phase !== 'idle' && !isRunning && (
-                  <PrimaryButton label="Reanudar" iconName="play" onPress={resume} />
+                  <PrimaryButton
+                    label="Reanudar"
+                    iconName="play"
+                    size={largeControls ? 'large' : 'default'}
+                    onPress={resume}
+                  />
                 )}
                 {phase !== 'idle' && (
                   <View style={styles.resetWrap}>
-                    <PrimaryButton label="Reiniciar" iconName="refresh" variant="ghost" onPress={reset} />
+                    <PrimaryButton
+                      label="Reiniciar"
+                      iconName="refresh"
+                      variant="ghost"
+                      size={largeControls ? 'large' : 'default'}
+                      onPress={reset}
+                    />
                   </View>
                 )}
               </View>
             </View>
-            <TaskList tasks={state.tasks} onAdd={addTask} onToggle={toggleTask} onDelete={deleteTask} />
+            <TaskList
+              tasks={state.tasks}
+              onAdd={addTask}
+              onToggle={toggleTask}
+              onDelete={deleteTask}
+              desktop={desktop}
+            />
           </View>
         </View>
       </ScrollView>
@@ -278,6 +318,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
   },
+  desktopPetName: {
+    fontSize: 30,
+  },
   petNameIcon: {
     marginLeft: 6,
     marginTop: 4,
@@ -304,9 +347,12 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   desktopCard: {
-    paddingVertical: 24,
-    paddingHorizontal: 28,
+    paddingVertical: 30,
+    paddingHorizontal: 34,
     borderRadius: 30,
+  },
+  desktopPhaseLabel: {
+    fontSize: 17,
   },
   phaseLabel: {
     fontSize: 14,
@@ -331,6 +377,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
+  },
+  desktopDurationOption: {
+    minHeight: 48,
   },
   durationOptionActive: {
     backgroundColor: colors.primary,
@@ -358,6 +407,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
     gap: 8,
+  },
+  desktopControlsRow: {
+    width: '100%',
+    justifyContent: 'center',
+    minHeight: 64,
+  },
+  desktopDurationLabel: {
+    fontSize: 15,
   },
   resetWrap: {
     marginLeft: 4,

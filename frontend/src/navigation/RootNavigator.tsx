@@ -22,7 +22,7 @@ const TABS: Record<string, { icon: IconName, iconFocused: IconName; label: strin
   Progreso: { icon: 'star-outline', iconFocused: 'star', label: 'Progreso' },
 };
 
-const SIDEBAR_WIDTH = 232;
+const SIDEBAR_WIDTH = 248;
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -67,7 +67,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             >
               <Ionicons
                 name={focused ? meta.iconFocused : meta.icon}
-                size={desktop ? 20 : 18}
+                size={desktop ? 24 : 18}
                 color={focused ? colors.primaryDark : colors.textSecondary}
               />
               <Text
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     color: colors.textPrimary,
-    fontSize: 23,
+    fontSize: 26,
     fontWeight: '900',
     letterSpacing: -0.6,
   },
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   desktopTabItem: {
     flex: 0,
-    minHeight: 52,
+    minHeight: 58,
     flexDirection: 'row',
     justifyContent: 'flex-start',
     paddingHorizontal: 14,
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   desktopTabLabel: {
-    fontSize: 13,
+    fontSize: 15,
   },
   tabLabelFocused: {
     color: colors.primaryDark,
