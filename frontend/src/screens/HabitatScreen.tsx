@@ -107,7 +107,7 @@ export default function HabitatScreen() {
           styles.scroll,
           desktop && styles.desktopScroll,
           {
-            paddingTop: insets.top + (desktop ? 50 : height <= 900 ? 32 : 52),
+            paddingTop: insets.top + (desktop ? 70 : height <= 900 ? 32 : 52),
             paddingBottom: desktop ? 40 : insets.bottom + 110,
           },
         ]}

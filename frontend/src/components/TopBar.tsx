@@ -26,15 +26,15 @@ export default function TopBar({ coins, streak, onAddCoins, desktop = false }: P
       pointerEvents="box-none"
     >
       <View style={styles.coinGroup}>
-        <View style={styles.pill}>
-          <CoinIcon size={24} />
+        <View style={[styles.pill, desktop && styles.desktopPill]}>
+          <CoinIcon size={desktop ? 34 : 24} />
           <Text style={styles.value} numberOfLines={1}>
             {coins}
           </Text>
         </View>
         {onAddCoins && (
           <TouchableOpacity
-            style={styles.addButton}
+            style={[styles.addButton, desktop && styles.desktopAddButton]}
             activeOpacity={0.8}
             onPress={() => {
               playSound('tap');
@@ -42,13 +42,18 @@ export default function TopBar({ coins, streak, onAddCoins, desktop = false }: P
             }}
           >
             <View style={styles.addButtonHighlight} pointerEvents="none" />
-            <Text style={styles.addButtonText}>+</Text>
+            <Text style={[styles.addButtonText, desktop && styles.desktopAddButtonText]}>+</Text>
           </TouchableOpacity>
         )}
       </View>
-      <View style={[styles.pill, styles.streakPill]}>
-        <IconBubble icon="🔥" size={24} background={colors.card} borderColor={colors.streak} />
-        <Text style={[styles.value, styles.streakValue]} numberOfLines={1}>
+      <View style={[styles.pill, styles.streakPill, desktop && styles.desktopPill]}>
+        <IconBubble
+          icon="🔥"
+          size={desktop ? 34 : 24}
+          background={colors.card}
+          borderColor={colors.streak}
+        />
+        <Text style={[styles.value, styles.streakValue, desktop && styles.desktopValue]} numberOfLines={1}>
           {streak}
         </Text>
       </View>
@@ -69,7 +74,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   desktopWrap: {
-    maxWidth: 1160,
+    maxWidth: 1240,
+    paddingHorizontal: 24,
+    paddingTop: 20,
   },
   coinGroup: {
     flexDirection: 'row',
@@ -95,6 +102,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  desktopPill: {
+    borderRadius: 28,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 11,
+    borderWidth: 1.5,
+  },
   streakPill: {
     backgroundColor: colors.streakBg,
   },
@@ -116,6 +130,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
+  desktopAddButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+  },
   addButtonHighlight: {
     position: 'absolute',
     top: 0,
@@ -132,11 +151,17 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginTop: -1,
   },
+  desktopAddButtonText: {
+    fontSize: 23,
+  },
   value: {
     fontSize: 15,
     fontWeight: '700',
     color: colors.textPrimary,
     flexShrink: 1,
+  },
+  desktopValue: {
+    fontSize: 19,
   },
   streakValue: {
     color: colors.streak,

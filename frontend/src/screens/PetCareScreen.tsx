@@ -23,7 +23,7 @@ export default function PetCareScreen() {
   const { width, height } = useWindowDimensions();
   const desktop = width >= 900;
   const petSize = desktop
-    ? Math.min(500, height * 0.66, (width - 328) * 0.5)
+    ? Math.min(440, height * 0.5, (width - 328) * 0.42)
     : Math.min(390, width * 0.96, height * 0.48);
   const statTrackWidth = desktop
     ? Math.max(120, Math.min(340, (width - 328) * 0.42 - 56))
@@ -42,7 +42,12 @@ export default function PetCareScreen() {
   };
 
   return (
-    <FittedImageBackground source={ROOM_BACKGROUND} aspectRatio={1536 / 2752} backgroundColor={colors.appBg}>
+    <FittedImageBackground
+      source={ROOM_BACKGROUND}
+      aspectRatio={1536 / 2752}
+      backgroundColor={colors.appBg}
+      coverOnDesktop={desktop}
+    >
       <View style={[styles.content, desktop && styles.desktopContent]}>
         <View style={[styles.header, desktop && styles.desktopHeader, { paddingTop: insets.top + 14 }]}>
           <Text style={[styles.headerTitle, desktop && styles.desktopHeaderTitle]}>Mi Mascota</Text>
@@ -116,15 +121,15 @@ const styles = StyleSheet.create({
   },
   desktopContent: {
     width: '100%',
-    maxWidth: 1320,
+    maxWidth: 1480,
     alignSelf: 'center',
-    paddingHorizontal: 40,
-    paddingBottom: 24,
+    paddingHorizontal: 48,
+    paddingBottom: 32,
   },
   desktopHeader: {
     alignItems: 'flex-start',
     paddingBottom: 0,
-    marginBottom: 8,
+    marginBottom: 14,
   },
   header: {
     alignItems: 'center',
@@ -148,7 +153,7 @@ const styles = StyleSheet.create({
     transform: [{ translateX: 14 }],
   },
   desktopStageAreaShift: {
-    transform: [{ translateX: 28 }],
+    transform: [{ translateX: -28 }],
   },
   desktopLayout: {
     flex: 1,
@@ -156,7 +161,7 @@ const styles = StyleSheet.create({
   desktopLayoutWide: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 28,
+    gap: 44,
   },
   nameBadge: {
     flexDirection: 'row',
@@ -205,9 +210,10 @@ const styles = StyleSheet.create({
   },
   desktopSheet: {
     width: 520,
-    maxWidth: '46%',
-    paddingTop: 32,
-    paddingHorizontal: 34,
+    maxWidth: '48%',
+    paddingTop: 28,
+    paddingHorizontal: 36,
+    paddingBottom: 34,
     borderRadius: 30,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,

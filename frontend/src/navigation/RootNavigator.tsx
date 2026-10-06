@@ -26,6 +26,31 @@ const TABS: Record<string, { icon: IconName, iconFocused: IconName; label: strin
 
 const SIDEBAR_WIDTH = 248;
 
+function AppTabs({ desktop }: { desktop: boolean }) {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route, navigation }) => {
+        const state = navigation.getState();
+        const focusedRoute = state.routes[state.index]?.name;
+
+        return {
+          headerShown: false,
+          freezeOnBlur: true,
+          sceneStyle: desktop
+            ? [styles.desktopScene, route.name !== focusedRoute && styles.hiddenDesktopScene]
+            : undefined,
+        };
+      }}
+      tabBar={(props) => <CustomTabBar {...props} />}
+    >
+      <Tab.Screen name="Habitat" component={HabitatScreen} />
+      <Tab.Screen name="Mascota" component={PetCareScreen} />
+      <Tab.Screen name="Tienda" component={ShopScreen} />
+      <Tab.Screen name="Progreso" component={ProgressScreen} />
+    </Tab.Navigator>
+  );
+}
+
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const desktop = useWindowDimensions().width >= 900;
@@ -107,26 +132,7 @@ export default function RootNavigator() {
             : DefaultTheme
         }
       >
-        <Tab.Navigator
-          // Suspends re-rendering of tabs you're not looking at (bottom-tabs v7
-          // has no unmountOnBlur, this is its replacement). The Pomodoro timer
-          // itself lives in GameContext above this navigator, so it's
-          // unaffected either way — but each tab's PetAvatar additionally
-          // checks useIsFocused() itself to stop its own animation loops when
-          // not visible, since freezing alone doesn't halt already-running
-          // native animations or timers.
-          screenOptions={{
-            headerShown: false,
-            freezeOnBlur: true,
-            sceneStyle: desktop ? { marginLeft: SIDEBAR_WIDTH, backgroundColor: 'transparent' } : undefined,
-          }}
-          tabBar={(props) => <CustomTabBar {...props} />}
-        >
-          <Tab.Screen name="Habitat" component={HabitatScreen} />
-          <Tab.Screen name="Mascota" component={PetCareScreen} />
-          <Tab.Screen name="Tienda" component={ShopScreen} />
-          <Tab.Screen name="Progreso" component={ProgressScreen} />
-        </Tab.Navigator>
+        <AppTabs desktop={desktop} />
       </NavigationContainer>
     </View>
   );
@@ -135,6 +141,13 @@ export default function RootNavigator() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  desktopScene: {
+    marginLeft: SIDEBAR_WIDTH,
+    backgroundColor: 'transparent',
+  },
+  hiddenDesktopScene: {
+    display: 'none',
   },
   tabBarWrap: {
     position: 'absolute',
