@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
 import CoinStoreModal from '../components/CoinStoreModal';
@@ -37,6 +38,62 @@ function formatTime(totalSeconds: number): string {
 }
 
 const DURATIONS = [15, 25, 45];
+
+function DurationButton({
+  minutes,
+  active,
+  desktop,
+  onSelect,
+}: {
+  minutes: number;
+  active: boolean;
+  desktop: boolean;
+  onSelect: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {}
+    Animated.spring(scale, { toValue: 0.92, friction: 8, tension: 240, useNativeDriver: true }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }).start();
+  };
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={onSelect}
+      style={{ flex: 1 }}
+    >
+      <Animated.View
+        style={[
+          styles.durationOption,
+          desktop && styles.desktopDurationOption,
+          active && styles.durationOptionActive,
+          { transform: [{ scale }] },
+        ]}
+      >
+        <Text
+          style={[
+            styles.durationLabel,
+            desktop && styles.desktopDurationLabel,
+            active && styles.durationLabelActive,
+          ]}
+        >
+          {minutes} min
+        </Text>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
 
 export default function HabitatScreen() {
   const insets = useSafeAreaInsets();
@@ -158,32 +215,17 @@ export default function HabitatScreen() {
               {phase === 'idle' && (
                 <View style={styles.durationsRow}>
                   {DURATIONS.map((d) => (
-                    <TouchableOpacity
+                    <DurationButton
                       key={d}
-                      style={[
-                        styles.durationOption,
-                        desktop && styles.desktopDurationOption,
-                        state.pomodoroMinutes === d && styles.durationOptionActive,
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: state.pomodoroMinutes === d }}
-                      onPress={() => {
+                      minutes={d}
+                      active={state.pomodoroMinutes === d}
+                      desktop={desktop}
+                      onSelect={() => {
                         if (state.pomodoroMinutes === d) return;
                         playSound('tap');
                         setPomodoroMinutes(d);
                       }}
-                      activeOpacity={0.75}
-                    >
-                      <Text
-                        style={[
-                          styles.durationLabel,
-                          desktop && styles.desktopDurationLabel,
-                          state.pomodoroMinutes === d && styles.durationLabelActive,
-                        ]}
-                      >
-                        {d} min
-                      </Text>
-                    </TouchableOpacity>
+                    />
                   ))}
                 </View>
               )}

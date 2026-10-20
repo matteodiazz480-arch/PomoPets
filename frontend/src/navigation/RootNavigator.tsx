@@ -1,13 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
 import HabitatBackground from '../components/HabitatBackground';
 import { useGame } from '../context/GameContext';
 import HabitatScreen from '../screens/HabitatScreen';
+import PcNotAvailableScreen from '../screens/PcNotAvailableScreen';
 import PetCareScreen from '../screens/PetCareScreen';
 import ProgressScreen from '../screens/ProgressScreen';
 import ShopScreen from '../screens/ShopScreen';
@@ -51,6 +53,72 @@ function AppTabs({ desktop }: { desktop: boolean }) {
   );
 }
 
+function AnimatedTabItem({
+  routeKey,
+  routeName,
+  focused,
+  desktop,
+  onPress,
+}: {
+  routeKey: string;
+  routeName: string;
+  focused: boolean;
+  desktop: boolean;
+  onPress: () => void;
+}) {
+  const meta = TABS[routeName];
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (focused) {
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 0.9, duration: 70, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1.08, friction: 4, tension: 220, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1, friction: 5, tension: 180, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [focused]);
+
+  return (
+    <TouchableOpacity
+      key={routeKey}
+      style={[
+        styles.tabItem,
+        desktop && styles.desktopTabItem,
+        focused && styles.tabItemFocused,
+      ]}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityState={{ selected: focused }}
+      accessibilityLabel={meta.label}
+      onPress={() => {
+        try {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        } catch {}
+        onPress();
+      }}
+    >
+      <Animated.View style={{ alignItems: 'center', justifyContent: 'center', transform: [{ scale }] }}>
+        <Ionicons
+          name={focused ? meta.iconFocused : meta.icon}
+          size={desktop ? 24 : 21}
+          color={focused ? colors.primaryDark : colors.textSecondary}
+        />
+        <Text
+          style={[
+            styles.tabLabel,
+            desktop && styles.desktopTabLabel,
+            focused && styles.tabLabelFocused,
+          ]}
+          numberOfLines={1}
+        >
+          {meta.label}
+        </Text>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const desktop = useWindowDimensions().width >= 900;
@@ -72,42 +140,20 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         )}
         {state.routes.map((route, index) => {
           const focused = state.index === index;
-          const meta = TABS[route.name];
           return (
-            <TouchableOpacity
+            <AnimatedTabItem
               key={route.key}
-              style={[
-                styles.tabItem,
-                desktop && styles.desktopTabItem,
-                focused && styles.tabItemFocused,
-              ]}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityState={{ selected: focused }}
-              accessibilityLabel={meta.label}
+              routeKey={route.key}
+              routeName={route.name}
+              focused={focused}
+              desktop={desktop}
               onPress={() => {
                 if (!focused) {
                   playSound('tap');
                   navigation.navigate(route.name);
                 }
               }}
-            >
-              <Ionicons
-                name={focused ? meta.iconFocused : meta.icon}
-                size={desktop ? 24 : 21}
-                color={focused ? colors.primaryDark : colors.textSecondary}
-              />
-              <Text
-                style={[
-                  styles.tabLabel,
-                  desktop && styles.desktopTabLabel,
-                  focused && styles.tabLabelFocused,
-                ]}
-                numberOfLines={1}
-              >
-                {meta.label}
-              </Text>
-            </TouchableOpacity>
+            />
           );
         })}
       </View>
@@ -116,8 +162,22 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 export default function RootNavigator() {
-  const desktop = useWindowDimensions().width >= 900;
+  const { width } = useWindowDimensions();
+  const isWeb = Platform.OS === 'web';
+  const isDesktop =
+    isWeb &&
+    (width >= 800 ||
+      (typeof navigator !== 'undefined' &&
+        !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) &&
+        width >= 600));
+  const [bypassedPc, setBypassedPc] = useState(false);
+  const desktop = width >= 900;
   const { state } = useGame();
+
+  if (isDesktop && !bypassedPc) {
+    return <PcNotAvailableScreen onBypass={() => setBypassedPc(true)} />;
+  }
+
   return (
     <View style={styles.root}>
       {desktop && (

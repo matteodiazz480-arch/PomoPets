@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
@@ -36,6 +37,7 @@ export default function PrimaryButton({
 }: Props) {
   const [reducedMotion, setReducedMotion] = useState(false);
   const pressScale = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
     let mounted = true;
     AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
@@ -47,6 +49,32 @@ export default function PrimaryButton({
       subscription.remove();
     };
   }, []);
+
+  const handlePressIn = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {}
+    if (reducedMotion) return;
+    Animated.spring(pressScale, {
+      toValue: 0.94,
+      friction: 8,
+      tension: 260,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    if (reducedMotion) {
+      pressScale.setValue(1);
+      return;
+    }
+    Animated.spring(pressScale, {
+      toValue: 1,
+      friction: 4,
+      tension: 200,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const handlePress = useCallback(
     (e: GestureResponderEvent) => {
@@ -69,12 +97,22 @@ export default function PrimaryButton({
     return (
       <TouchableOpacity
         onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
         disabled={disabled}
-        style={[styles.ghost, size === 'large' && styles.largeGhost, disabled && styles.disabled]}
-        activeOpacity={0.7}
+        activeOpacity={0.8}
+        style={disabled && styles.disabled}
       >
-        {iconEl}
-        <Text style={[styles.ghostLabel, size === 'large' && styles.largeGhostLabel]}>{label}</Text>
+        <Animated.View
+          style={[
+            styles.ghost,
+            size === 'large' && styles.largeGhost,
+            { transform: [{ scale: pressScale }] },
+          ]}
+        >
+          {iconEl}
+          <Text style={[styles.ghostLabel, size === 'large' && styles.largeGhostLabel]}>{label}</Text>
+        </Animated.View>
       </TouchableOpacity>
     );
   }
@@ -83,12 +121,22 @@ export default function PrimaryButton({
     return (
       <TouchableOpacity
         onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
         disabled={disabled}
-        style={[styles.secondary, size === 'large' && styles.largeSecondary, disabled && styles.disabled]}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
+        style={disabled && styles.disabled}
       >
-        {iconEl}
-        <Text style={[styles.secondaryLabel, size === 'large' && styles.largeSecondaryLabel]}>{label}</Text>
+        <Animated.View
+          style={[
+            styles.secondary,
+            size === 'large' && styles.largeSecondary,
+            { transform: [{ scale: pressScale }] },
+          ]}
+        >
+          {iconEl}
+          <Text style={[styles.secondaryLabel, size === 'large' && styles.largeSecondaryLabel]}>{label}</Text>
+        </Animated.View>
       </TouchableOpacity>
     );
   }
@@ -96,35 +144,10 @@ export default function PrimaryButton({
   return (
     <TouchableOpacity
       onPress={handlePress}
-      onPressIn={() => {
-        if (reducedMotion) return;
-        Animated.timing(pressScale, {
-          toValue: 0.95,
-          duration: 60,
-          useNativeDriver: true,
-        }).start();
-      }}
-      onPressOut={() => {
-        if (reducedMotion) {
-          pressScale.setValue(1);
-          return;
-        }
-        Animated.sequence([
-          Animated.timing(pressScale, {
-            toValue: 1.04,
-            duration: 80,
-            useNativeDriver: true,
-          }),
-          Animated.spring(pressScale, {
-            toValue: 1,
-            speed: 22,
-            bounciness: 8,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       disabled={disabled}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
       style={disabled && styles.disabled}
     >
       <Animated.View

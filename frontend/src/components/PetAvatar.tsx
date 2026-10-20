@@ -10,19 +10,13 @@ type Props = {
   feedSignal?: number;
 };
 
-const BREATH_DURATION = 1600;
-const BREATH_AMPLITUDE = 1.035;
+const BREATH_DURATION = 1700;
+const BREATH_AMPLITUDE = 1.055;
 const FIRST_BLINK_DELAY_MS = 7000;
 const BLINK_INTERVAL_MIN_MS = 5000;
 const BLINK_INTERVAL_VARIANCE_MS = 3000;
 const BLINK_DURATION_MS = 120;
 
-// All animations below only ever touch transform/opacity so they can run fully on
-// the native thread (useNativeDriver: true) — no JS-thread work per frame, no
-// layout thrashing, cheap enough to run continuously without jank.
-//
-// The pet stays put — no idle sway/rotation/hop. Only two things move it: the
-// breathing scale pulse (always on) and the feed reaction bump (triggered).
 export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal = 0 }: Props) {
   const [blinking, setBlinking] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -31,9 +25,6 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
   const feedBump = useRef(new Animated.Value(0)).current;
   const sparkle = useRef(new Animated.Value(0)).current;
   const isFirstFeedSignal = useRef(true);
-  // React Navigation keeps every tab you've visited mounted (frozen, not
-  // unmounted) — without this, a pet on a tab you're not even looking at
-  // would keep breathing/blinking forever in the background.
   const isFocused = useIsFocused();
 
   useEffect(() => {
@@ -48,48 +39,56 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
     };
   }, []);
 
-  // Gentle scale-only breathing loop.
+  // Rock-solid breathing loop using recursive start rather than Animated.loop,
+  // which avoids freezing on Android devices and when switching tabs.
   useEffect(() => {
-    if (!isFocused || reducedMotion) {
+    if (!isFocused) {
       breath.setValue(0);
       return;
     }
-    const loop = Animated.loop(
+    let isCancelled = false;
+
+    const runBreathCycle = () => {
+      if (isCancelled) return;
       Animated.sequence([
         Animated.timing(breath, {
           toValue: 1,
           duration: BREATH_DURATION,
-          easing: Easing.inOut(Easing.sin),
+          easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(breath, {
           toValue: 0,
           duration: BREATH_DURATION,
-          easing: Easing.inOut(Easing.sin),
+          easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
         }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [breath, isFocused, reducedMotion]);
+      ]).start(({ finished }) => {
+        if (finished && !isCancelled) {
+          runBreathCycle();
+        }
+      });
+    };
 
-  // Happy little bounce + a floating heart whenever the pet gets fed.
+    runBreathCycle();
+
+    return () => {
+      isCancelled = true;
+      breath.stopAnimation();
+    };
+  }, [breath, isFocused]);
+
+  // Happy bounce + floating heart whenever the pet is fed
   useEffect(() => {
     if (isFirstFeedSignal.current) {
       isFirstFeedSignal.current = false;
       return;
     }
-    if (reducedMotion) {
-      feedBump.setValue(0);
-      sparkle.setValue(0);
-      return;
-    }
     feedBump.setValue(0);
     sparkle.setValue(0);
     Animated.sequence([
-      Animated.timing(feedBump, { toValue: 1, duration: 150, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-      Animated.spring(feedBump, { toValue: 0, friction: 3.2, tension: 90, useNativeDriver: true }),
+      Animated.timing(feedBump, { toValue: 1, duration: 160, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.spring(feedBump, { toValue: 0, friction: 3.5, tension: 120, useNativeDriver: true }),
     ]).start();
     Animated.timing(sparkle, {
       toValue: 1,
@@ -97,8 +96,7 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feedSignal, reducedMotion]);
+  }, [feedSignal]);
 
   useEffect(() => {
     if (!isFocused) return;
@@ -129,8 +127,15 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
     };
   }, [isFocused]);
 
-  const breathScale = breath.interpolate({ inputRange: [0, 1], outputRange: [1, BREATH_AMPLITUDE] });
-  const bumpScale = feedBump.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
+  const breathScale = breath.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, reducedMotion ? 1.02 : BREATH_AMPLITUDE],
+  });
+  const breathTranslateY = breath.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, reducedMotion ? -1 : -3.5],
+  });
+  const bumpScale = feedBump.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] });
   const sparkleTranslateY = sparkle.interpolate({ inputRange: [0, 1], outputRange: [0, -48] });
   const sparkleOpacity = sparkle.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 1, 0] });
 
@@ -140,31 +145,38 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
         style={[
           styles.petImageFrame,
           { width: size, height: size },
-          { transform: [{ scale: Animated.multiply(breathScale, bumpScale) }] },
+          { transform: [{ scale: bumpScale }] },
         ]}
       >
-        <Image
-          source={eyesOpen}
+        <Animated.View
           style={[
-            styles.petSprite,
-            { width: imageWidth, height: size, left: (size - imageWidth) / 2 },
+            StyleSheet.absoluteFill,
+            { transform: [{ scale: breathScale }, { translateY: breathTranslateY }] },
           ]}
-          resizeMode="contain"
-        />
-        <Image
-          source={eyesClosed}
-          style={[
-            styles.closedEyes,
-            {
-              width: imageWidth,
-              height: size,
-              top: 0,
-              left: (size - imageWidth) / 2,
-              opacity: blinking ? 1 : 0,
-            },
-          ]}
-          resizeMode="contain"
-        />
+        >
+          <Image
+            source={eyesOpen}
+            style={[
+              styles.petSprite,
+              { width: imageWidth, height: size, left: (size - imageWidth) / 2 },
+            ]}
+            resizeMode="contain"
+          />
+          <Image
+            source={eyesClosed}
+            style={[
+              styles.closedEyes,
+              {
+                width: imageWidth,
+                height: size,
+                top: 0,
+                left: (size - imageWidth) / 2,
+                opacity: blinking ? 1 : 0,
+              },
+            ]}
+            resizeMode="contain"
+          />
+        </Animated.View>
       </Animated.View>
 
       <Animated.View

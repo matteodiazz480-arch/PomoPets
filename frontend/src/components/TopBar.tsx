@@ -1,5 +1,6 @@
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useRef } from 'react';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
 import IconBubble from './IconBubble';
@@ -15,6 +16,18 @@ type Props = {
 
 export default function TopBar({ coins, streak, onAddCoins, desktop = false }: Props) {
   const insets = useSafeAreaInsets();
+  const addScale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {}
+    Animated.spring(addScale, { toValue: 0.88, friction: 8, tension: 240, useNativeDriver: true }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(addScale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }).start();
+  };
 
   return (
     <View
@@ -34,15 +47,24 @@ export default function TopBar({ coins, streak, onAddCoins, desktop = false }: P
         </View>
         {onAddCoins && (
           <TouchableOpacity
-            style={[styles.addButton, desktop && styles.desktopAddButton]}
-            activeOpacity={0.8}
+            activeOpacity={0.9}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
             onPress={() => {
               playSound('tap');
               onAddCoins();
             }}
           >
-            <View style={styles.addButtonHighlight} pointerEvents="none" />
-            <Text style={[styles.addButtonText, desktop && styles.desktopAddButtonText]}>+</Text>
+            <Animated.View
+              style={[
+                styles.addButton,
+                desktop && styles.desktopAddButton,
+                { transform: [{ scale: addScale }] },
+              ]}
+            >
+              <View style={styles.addButtonHighlight} pointerEvents="none" />
+              <Text style={[styles.addButtonText, desktop && styles.desktopAddButtonText]}>+</Text>
+            </Animated.View>
           </TouchableOpacity>
         )}
       </View>

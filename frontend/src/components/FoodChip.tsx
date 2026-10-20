@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import React, { useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
 import { colors } from '../theme/colors';
@@ -15,10 +16,14 @@ export default function FoodChip({ icon, count, onFeed }: Props) {
   const handlePress = () => {
     if (busy.current) return;
     busy.current = true;
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    } catch {}
     onFeed();
     Animated.sequence([
-      Animated.timing(scale, { toValue: 0.94, duration: 90, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, friction: 6, tension: 140, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 0.86, duration: 80, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1.12, friction: 4, tension: 180, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 5, tension: 160, useNativeDriver: true }),
     ]).start(() => {
       busy.current = false;
     });

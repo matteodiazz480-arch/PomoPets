@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useRef, useState } from 'react';
+import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
@@ -11,6 +12,43 @@ import { SHOP_BACKGROUNDS } from '../data/shop';
 import { colors } from '../theme/colors';
 
 type Category = 'backgrounds' | 'food';
+
+function ShopItemCard({
+  style,
+  onPress,
+  children,
+}: {
+  style?: any;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {}
+    Animated.spring(scale, { toValue: 0.94, friction: 8, tension: 240, useNativeDriver: true }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }).start();
+  };
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={onPress}
+      style={style}
+    >
+      <Animated.View style={[{ width: '100%', alignItems: 'center' }, { transform: [{ scale }] }]}>
+        {children}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
 
 export default function ShopScreen() {
   const insets = useSafeAreaInsets();
@@ -70,9 +108,8 @@ export default function ShopScreen() {
                 const owned = state.ownedBackgrounds.includes(item.id);
                 const active = state.activeBackground === item.id;
                 return (
-                  <TouchableOpacity
+                  <ShopItemCard
                     key={item.id}
-                    activeOpacity={0.85}
                     style={[
                       styles.itemCard,
                       desktop && styles.desktopItemCard,
@@ -102,7 +139,7 @@ export default function ShopScreen() {
                         <Text style={styles.priceValue}>{item.price}</Text>
                       </View>
                     )}
-                  </TouchableOpacity>
+                  </ShopItemCard>
                 );
               })}
             </View>
@@ -114,9 +151,8 @@ export default function ShopScreen() {
               {SHOP_FOODS.map((item) => {
                 const owned = state.inventory[item.id] ?? 0;
                 return (
-                  <TouchableOpacity
+                  <ShopItemCard
                     key={item.id}
-                    activeOpacity={0.85}
                     style={[
                       styles.itemCard,
                       desktop && styles.desktopItemCard,
@@ -146,7 +182,7 @@ export default function ShopScreen() {
                       <CoinIcon size={18} style={styles.priceIconBubble} />
                       <Text style={styles.priceValue}>{item.price}</Text>
                     </View>
-                  </TouchableOpacity>
+                  </ShopItemCard>
                 );
               })}
             </View>

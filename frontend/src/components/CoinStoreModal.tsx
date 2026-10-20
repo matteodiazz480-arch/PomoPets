@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useRef } from 'react';
+import { Alert, Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { playSound } from '../audio/sounds';
 import { COIN_PACKS, type CoinPack } from '../data/coinPacks';
 import { colors } from '../theme/colors';
@@ -12,9 +13,70 @@ type Props = {
   onClose: () => void;
 };
 
-// Purchases aren't wired to a real payment processor yet (that needs a native
-// IAP module + store-side product setup), so tapping a pack is a clear,
-// honest "coming soon" rather than silently granting free coins.
+function CoinPackCard({
+  pack,
+  onPress,
+}: {
+  pack: CoinPack;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {}
+    Animated.spring(scale, { toValue: 0.95, friction: 8, tension: 240, useNativeDriver: true }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }).start();
+  };
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={onPress}
+    >
+      <Animated.View
+        style={[
+          styles.packCard,
+          pack.highlight && styles.packCardHighlight,
+          { transform: [{ scale }] },
+        ]}
+      >
+        {pack.highlight && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{pack.highlight}</Text>
+          </View>
+        )}
+        {pack.id === 'starter' ? (
+          <CoinIcon size={46} style={styles.packIconBubble} />
+        ) : (
+          <IconBubble icon={pack.icon} size={46} fontSize={24} style={styles.packIconBubble} />
+        )}
+        <View style={styles.packInfo}>
+          <View style={styles.packCoinsRow}>
+            <CoinIcon size={16} />
+            <Text style={styles.packCoins}>{(pack.coins + pack.bonusCoins).toLocaleString('es')}</Text>
+          </View>
+          {pack.bonusCoins > 0 && (
+            <Text style={styles.packBonus}>
+              {pack.coins.toLocaleString('es')} + {pack.bonusCoins} de regalo
+            </Text>
+          )}
+        </View>
+        <View style={styles.buyButton}>
+          <View style={styles.buyButtonHighlight} pointerEvents="none" />
+          <Text style={styles.buyButtonText}>{pack.priceLabel}</Text>
+        </View>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
 function handlePackPress(pack: CoinPack) {
   playSound('tap');
   Alert.alert(
@@ -24,59 +86,37 @@ function handlePackPress(pack: CoinPack) {
 }
 
 export default function CoinStoreModal({ visible, onClose }: Props) {
+  const closeScale = useRef(new Animated.Value(1)).current;
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <TouchableOpacity
-            style={styles.closeButton}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
+            onPressIn={() => {
+              Animated.spring(closeScale, { toValue: 0.88, friction: 8, tension: 240, useNativeDriver: true }).start();
+            }}
+            onPressOut={() => {
+              Animated.spring(closeScale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }).start();
+            }}
             onPress={() => {
               playSound('tap');
               onClose();
             }}
           >
-            <View style={styles.closeButtonHighlight} pointerEvents="none" />
-            <Ionicons name="close" size={18} color={colors.textPrimary} />
+            <Animated.View style={[styles.closeButton, { transform: [{ scale: closeScale }] }]}>
+              <View style={styles.closeButtonHighlight} pointerEvents="none" />
+              <Ionicons name="close" size={18} color={colors.textPrimary} />
+            </Animated.View>
           </TouchableOpacity>
           <Text style={styles.title}>Monedas</Text>
           <Text style={styles.subtitle}>Consigue monedas extra para tu mascota</Text>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
             {COIN_PACKS.map((pack) => (
-              <TouchableOpacity
-                key={pack.id}
-                activeOpacity={0.85}
-                style={[styles.packCard, pack.highlight && styles.packCardHighlight]}
-                onPress={() => handlePackPress(pack)}
-              >
-                {pack.highlight && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{pack.highlight}</Text>
-                  </View>
-                )}
-                {pack.id === 'starter' ? (
-                  <CoinIcon size={46} style={styles.packIconBubble} />
-                ) : (
-                  <IconBubble icon={pack.icon} size={46} fontSize={24} style={styles.packIconBubble} />
-                )}
-                <View style={styles.packInfo}>
-                  <View style={styles.packCoinsRow}>
-                    <CoinIcon size={16} />
-                    <Text style={styles.packCoins}>{(pack.coins + pack.bonusCoins).toLocaleString('es')}</Text>
-                  </View>
-                  {pack.bonusCoins > 0 && (
-                    <Text style={styles.packBonus}>
-                      {pack.coins.toLocaleString('es')} + {pack.bonusCoins} de regalo
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.buyButton}>
-                  <View style={styles.buyButtonHighlight} pointerEvents="none" />
-                  <Text style={styles.buyButtonText}>{pack.priceLabel}</Text>
-                </View>
-              </TouchableOpacity>
+              <CoinPackCard key={pack.id} pack={pack} onPress={() => handlePackPress(pack)} />
             ))}
           </ScrollView>
 

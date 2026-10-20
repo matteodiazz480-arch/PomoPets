@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useRef, useState } from 'react';
+import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { playSound } from '../audio/sounds';
 import type { Task } from '../context/GameContext';
 import { colors } from '../theme/colors';
@@ -15,16 +16,104 @@ type Props = {
 
 const MAX_LENGTH = 60;
 
+function TaskRow({
+  task,
+  onToggle,
+  onDelete,
+}: {
+  task: Task;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const checkScale = useRef(new Animated.Value(1)).current;
+  const deleteScale = useRef(new Animated.Value(1)).current;
+
+  const handleToggle = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {}
+    playSound('tap');
+    Animated.sequence([
+      Animated.timing(checkScale, { toValue: 0.8, duration: 80, useNativeDriver: true }),
+      Animated.spring(checkScale, { toValue: 1.15, friction: 4, tension: 200, useNativeDriver: true }),
+      Animated.spring(checkScale, { toValue: 1, friction: 5, tension: 180, useNativeDriver: true }),
+    ]).start();
+    onToggle(task.id);
+  };
+
+  const handleDeletePressIn = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {}
+    Animated.spring(deleteScale, { toValue: 0.85, friction: 8, tension: 240, useNativeDriver: true }).start();
+  };
+
+  const handleDeletePressOut = () => {
+    Animated.spring(deleteScale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }).start();
+  };
+
+  return (
+    <View style={styles.row}>
+      <TouchableOpacity
+        style={styles.checkbox}
+        activeOpacity={0.7}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: task.done }}
+        accessibilityLabel={task.text}
+        onPress={handleToggle}
+      >
+        <Animated.View
+          style={[
+            styles.checkCircle,
+            task.done && styles.checkCircleDone,
+            { transform: [{ scale: checkScale }] },
+          ]}
+        >
+          {task.done && <Ionicons name="checkmark" size={14} color={colors.white} />}
+        </Animated.View>
+        <Text style={[styles.taskText, task.done && styles.taskTextDone]} numberOfLines={2}>
+          {task.text}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPressIn={handleDeletePressIn}
+        onPressOut={handleDeletePressOut}
+        onPress={() => {
+          playSound('tap');
+          onDelete(task.id);
+        }}
+      >
+        <Animated.View style={[styles.deleteButton, { transform: [{ scale: deleteScale }] }]}>
+          <Ionicons name="trash-outline" size={16} color={colors.textSecondary} />
+        </Animated.View>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function TaskList({ tasks, onAdd, onToggle, onDelete, desktop = false }: Props) {
   const [draft, setDraft] = useState('');
+  const addScale = useRef(new Animated.Value(1)).current;
   const doneCount = tasks.filter((t) => t.done).length;
 
   const handleAdd = () => {
     const trimmed = draft.trim();
     if (trimmed.length === 0) return;
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {}
     playSound('tap');
     onAdd(trimmed);
     setDraft('');
+  };
+
+  const handleAddPressIn = () => {
+    Animated.spring(addScale, { toValue: 0.9, friction: 8, tension: 240, useNativeDriver: true }).start();
+  };
+
+  const handleAddPressOut = () => {
+    Animated.spring(addScale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }).start();
   };
 
   return (
@@ -52,15 +141,24 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete, desktop = f
           onSubmitEditing={handleAdd}
         />
         <TouchableOpacity
-          style={[styles.addButton, draft.trim().length === 0 && styles.addButtonDisabled]}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
           disabled={draft.trim().length === 0}
           accessibilityRole="button"
           accessibilityLabel="Agregar tarea"
+          onPressIn={handleAddPressIn}
+          onPressOut={handleAddPressOut}
           onPress={handleAdd}
         >
-          <View style={styles.addButtonHighlight} pointerEvents="none" />
-          <Ionicons name="add" size={20} color={colors.white} />
+          <Animated.View
+            style={[
+              styles.addButton,
+              draft.trim().length === 0 && styles.addButtonDisabled,
+              { transform: [{ scale: addScale }] },
+            ]}
+          >
+            <View style={styles.addButtonHighlight} pointerEvents="none" />
+            <Ionicons name="add" size={20} color={colors.white} />
+          </Animated.View>
         </TouchableOpacity>
       </View>
 
@@ -71,36 +169,7 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete, desktop = f
       ) : (
         <View style={styles.list}>
           {tasks.map((task) => (
-            <View key={task.id} style={styles.row}>
-              <TouchableOpacity
-                style={styles.checkbox}
-                activeOpacity={0.7}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: task.done }}
-                accessibilityLabel={task.text}
-                onPress={() => {
-                  playSound('tap');
-                  onToggle(task.id);
-                }}
-              >
-                <View style={[styles.checkCircle, task.done && styles.checkCircleDone]}>
-                  {task.done && <Ionicons name="checkmark" size={14} color={colors.white} />}
-                </View>
-                <Text style={[styles.taskText, task.done && styles.taskTextDone]} numberOfLines={2}>
-                  {task.text}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.deleteButton}
-                activeOpacity={0.7}
-                onPress={() => {
-                  playSound('tap');
-                  onDelete(task.id);
-                }}
-              >
-                <Ionicons name="trash-outline" size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
+            <TaskRow key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} />
           ))}
         </View>
       )}
