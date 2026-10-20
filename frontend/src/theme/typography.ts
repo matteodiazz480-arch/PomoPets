@@ -13,8 +13,18 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
     const style = document.createElement('style');
     style.id = 'google-font-nunito-style';
     style.textContent = `
-      body, button, input, textarea, select, text, div, span, p, h1, h2, h3, h4, h5, h6 {
-        font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+      body, button, input, textarea, select {
+        font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
+      /* Prevent overriding vector icon fonts */
+      [style*="Ionicons"],
+      [style*="ionicons"],
+      [style*="font-family: Ionicons"],
+      [style*="font-family: 'Ionicons'"],
+      [style*='font-family: "Ionicons"'],
+      [data-icon],
+      .ionicons {
+        font-family: Ionicons !important;
       }
     `;
     document.head.appendChild(style);

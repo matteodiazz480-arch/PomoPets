@@ -123,9 +123,9 @@ const styles = StyleSheet.create({
   },
   scroll: {
     width: '100%',
-    maxWidth: 520,
+    maxWidth: 600,
     alignSelf: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   desktopScroll: {
     maxWidth: 1420,

@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     width: '100%',
-    maxWidth: 520,
+    maxWidth: 600,
     alignSelf: 'center',
     backgroundColor: colors.card,
     borderTopLeftRadius: 32,

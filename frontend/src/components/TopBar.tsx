@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
 import IconBubble from './IconBubble';
@@ -17,6 +18,28 @@ type Props = {
 export default function TopBar({ coins, streak, onAddCoins, desktop = false }: Props) {
   const insets = useSafeAreaInsets();
   const addScale = useRef(new Animated.Value(1)).current;
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+      document.addEventListener('fullscreenchange', onFsChange);
+      return () => document.removeEventListener('fullscreenchange', onFsChange);
+    }
+  }, []);
+
+  const toggleFullscreen = () => {
+    playSound('tap');
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      try {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      } catch {}
+    }
+  };
 
   const handlePressIn = () => {
     try {
@@ -68,16 +91,35 @@ export default function TopBar({ coins, streak, onAddCoins, desktop = false }: P
           </TouchableOpacity>
         )}
       </View>
-      <View style={[styles.pill, styles.streakPill, desktop && styles.desktopPill]}>
-        <IconBubble
-          icon="🔥"
-          size={desktop ? 34 : 24}
-          background={colors.card}
-          borderColor={colors.streak}
-        />
-        <Text style={[styles.value, styles.streakValue, desktop && styles.desktopValue]} numberOfLines={1}>
-          {streak}
-        </Text>
+
+      <View style={styles.rightGroup}>
+        <View style={[styles.pill, styles.streakPill, desktop && styles.desktopPill]}>
+          <IconBubble
+            icon="🔥"
+            size={desktop ? 34 : 24}
+            background={colors.card}
+            borderColor={colors.streak}
+          />
+          <Text style={[styles.value, styles.streakValue, desktop && styles.desktopValue]} numberOfLines={1}>
+            {streak}
+          </Text>
+        </View>
+
+        {Platform.OS === 'web' && (
+          <TouchableOpacity
+            style={[styles.fsButton, desktop && styles.desktopFsButton]}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+            onPress={toggleFullscreen}
+          >
+            <Ionicons
+              name={isFullscreen ? 'contract-outline' : 'expand-outline'}
+              size={desktop ? 20 : 16}
+              color={colors.textPrimary}
+            />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -88,7 +130,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     width: '100%',
-    maxWidth: 440,
+    maxWidth: 600,
     alignSelf: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -99,6 +141,31 @@ const styles = StyleSheet.create({
     maxWidth: 1240,
     paddingHorizontal: 24,
     paddingTop: 20,
+  },
+  rightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  fsButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  desktopFsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   coinGroup: {
     flexDirection: 'row',

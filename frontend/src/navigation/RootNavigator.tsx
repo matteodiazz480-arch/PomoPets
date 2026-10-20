@@ -228,10 +228,10 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     width: '100%',
-    maxWidth: 440,
+    maxWidth: 580,
     backgroundColor: colors.card,
     borderRadius: 24,
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderWidth: 2,
     borderColor: '#E6D5BF',
