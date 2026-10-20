@@ -1,12 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useRef } from 'react';
-import { Alert, Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Animated,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 import { playSound } from '../audio/sounds';
 import { COIN_PACKS, type CoinPack } from '../data/coinPacks';
 import { colors } from '../theme/colors';
 import IconBubble from './IconBubble';
 import CoinIcon from './CoinIcon';
+import PrimaryButton from './PrimaryButton';
 
 type Props = {
   visible: boolean;
@@ -91,9 +102,15 @@ export default function CoinStoreModal({ visible, onClose }: Props) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.backdropTouch} />
+        </TouchableWithoutFeedback>
+
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <TouchableOpacity
+            style={styles.closeButton}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             activeOpacity={0.85}
             onPressIn={() => {
               Animated.spring(closeScale, { toValue: 0.88, friction: 8, tension: 240, useNativeDriver: true }).start();
@@ -106,7 +123,7 @@ export default function CoinStoreModal({ visible, onClose }: Props) {
               onClose();
             }}
           >
-            <Animated.View style={[styles.closeButton, { transform: [{ scale: closeScale }] }]}>
+            <Animated.View style={[styles.closeButtonInner, { transform: [{ scale: closeScale }] }]}>
               <View style={styles.closeButtonHighlight} pointerEvents="none" />
               <Ionicons name="close" size={18} color={colors.textPrimary} />
             </Animated.View>
@@ -119,6 +136,10 @@ export default function CoinStoreModal({ visible, onClose }: Props) {
               <CoinPackCard key={pack.id} pack={pack} onPress={() => handlePackPress(pack)} />
             ))}
           </ScrollView>
+
+          <View style={styles.footerWrap}>
+            <PrimaryButton label="Cerrar" variant="secondary" onPress={onClose} sound="tap" />
+          </View>
 
           <Text style={styles.disclaimer}>Los pagos dentro de la app estarán disponibles próximamente.</Text>
         </View>
@@ -133,6 +154,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
+  backdropTouch: {
+    ...StyleSheet.absoluteFill,
+  },
   sheet: {
     backgroundColor: colors.appBg,
     borderTopLeftRadius: 30,
@@ -141,8 +165,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingTop: 10,
     paddingHorizontal: 22,
-    paddingBottom: 26,
-    maxHeight: '80%',
+    paddingBottom: 22,
+    maxHeight: '84%',
   },
   handle: {
     width: 40,
@@ -154,20 +178,22 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 18,
-    right: 20,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    top: 14,
+    right: 18,
+    zIndex: 20,
+  },
+  closeButtonInner: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: colors.border,
     borderBottomWidth: 4,
-    borderBottomColor: colors.border,
+    borderBottomColor: '#E6D5BF',
     overflow: 'hidden',
-    zIndex: 1,
   },
   closeButtonHighlight: {
     position: 'absolute',
@@ -277,6 +303,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: colors.white,
+  },
+  footerWrap: {
+    marginTop: 14,
+    marginBottom: 6,
+    alignItems: 'center',
   },
   disclaimer: {
     fontSize: 10,

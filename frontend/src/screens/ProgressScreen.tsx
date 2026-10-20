@@ -30,15 +30,21 @@ export default function ProgressScreen() {
 
         <View style={[styles.statsRow, desktop && styles.desktopStatsRow]}>
           <View style={[styles.statCard, desktop && styles.desktopStatCard]}>
-            <Text style={[styles.statValue, desktop && styles.desktopStatValue, styles.levelBadge]}>{level}</Text>
+            <View style={[styles.badgeContainer, styles.levelBadge, desktop && styles.desktopBadgeContainer]}>
+              <Text style={[styles.statValue, desktop && styles.desktopStatValue]}>{level}</Text>
+            </View>
             <Text style={[styles.statLabel, desktop && styles.desktopStatLabel]}>Nivel</Text>
           </View>
           <View style={[styles.statCard, desktop && styles.desktopStatCard]}>
-            <Text style={[styles.statValue, desktop && styles.desktopStatValue, styles.streakBadge]}>{state.streak}</Text>
+            <View style={[styles.badgeContainer, styles.streakBadge, desktop && styles.desktopBadgeContainer]}>
+              <Text style={[styles.statValue, desktop && styles.desktopStatValue]}>{state.streak}</Text>
+            </View>
             <Text style={[styles.statLabel, desktop && styles.desktopStatLabel]}>Racha 🔥</Text>
           </View>
           <View style={[styles.statCard, desktop && styles.desktopStatCard]}>
-            <Text style={[styles.statValue, desktop && styles.desktopStatValue, styles.minutesBadge]}>{state.minutesStudiedTotal}</Text>
+            <View style={[styles.badgeContainer, styles.minutesBadge, desktop && styles.desktopBadgeContainer]}>
+              <Text style={[styles.statValue, desktop && styles.desktopStatValue]}>{state.minutesStudiedTotal}</Text>
+            </View>
             <Text style={[styles.statLabel, desktop && styles.desktopStatLabel]}>Minutos</Text>
           </View>
         </View>
@@ -158,8 +164,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.card,
     borderRadius: 20,
-    paddingVertical: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
     borderColor: colors.border,
     borderBottomWidth: 4,
@@ -171,31 +179,37 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   desktopStatCard: {
-    paddingVertical: 22,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     borderRadius: 24,
   },
-  statValue: {
-    minWidth: 42,
-    height: 42,
-    overflow: 'hidden',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.textPrimary,
+  badgeContainer: {
+    minWidth: 44,
+    height: 44,
+    borderRadius: 15,
     borderWidth: 2,
     borderBottomWidth: 4,
-    borderRadius: 16,
-    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 8,
-    marginBottom: 4,
+    marginBottom: 6,
+  },
+  desktopBadgeContainer: {
+    minWidth: 54,
+    height: 52,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  statValue: {
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    includeFontPadding: false,
   },
   desktopStatValue: {
-    minWidth: 54,
-    height: 54,
-    borderRadius: 19,
-    fontSize: 28,
-    paddingHorizontal: 12,
+    fontSize: 26,
   },
   levelBadge: {
     backgroundColor: '#EFEBFF',
@@ -272,7 +286,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   sectionTitleSpaced: {
-    marginTop: 14,
+    marginTop: 28,
   },
   desktopSections: {
     width: '100%',
@@ -280,7 +294,7 @@ const styles = StyleSheet.create({
   desktopSectionsWide: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 24,
+    gap: 28,
   },
   progressSection: {
     flex: 1,
@@ -289,9 +303,9 @@ const styles = StyleSheet.create({
   stageCard: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 14,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.border,
@@ -304,9 +318,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   desktopStageCard: {
-    padding: 20,
-    borderRadius: 24,
-    marginBottom: 16,
+    padding: 22,
+    borderRadius: 26,
+    marginBottom: 18,
   },
   stageCardActive: {
     borderColor: colors.primaryDark,
