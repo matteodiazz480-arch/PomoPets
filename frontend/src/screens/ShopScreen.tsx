@@ -254,7 +254,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   itemCard: {
-    width: '47%',
+    flex: 1,
+    minWidth: '46%',
+    maxWidth: '49%',
     backgroundColor: colors.card,
     borderRadius: 22,
     padding: 12,
@@ -270,11 +272,16 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   desktopItemCard: {
+    flex: 0,
+    minWidth: '47%',
+    maxWidth: '48%',
     width: '47%',
     padding: 18,
     borderRadius: 26,
   },
   wideItemCard: {
+    minWidth: '31%',
+    maxWidth: '32%',
     width: '31.5%',
   },
   itemCardActive: {

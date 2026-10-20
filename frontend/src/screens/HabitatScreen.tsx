@@ -44,11 +44,11 @@ export default function HabitatScreen() {
   const desktop = width >= 900;
   const timerSize = desktop
     ? Math.min(width >= 1050 ? 280 : 220, height * 0.31)
-    : height <= 900 ? 160 : 184;
+    : height <= 750 ? 150 : 168;
   const largeControls = width >= 1100;
   const petSize = desktop
-    ? Math.min(460, height * 0.52, (width - 356) * 0.45)
-    : Math.min(266, height * 0.38, width * 0.82);
+    ? Math.min(420, height * 0.48, (width - 356) * 0.42)
+    : Math.min(170, height * 0.22, width * 0.48);
   const {
     state,
     level,
@@ -107,7 +107,7 @@ export default function HabitatScreen() {
           styles.scroll,
           desktop && styles.desktopScroll,
           {
-            paddingTop: insets.top + (desktop ? 70 : height <= 900 ? 32 : 52),
+            paddingTop: insets.top + (desktop ? 70 : 64),
             paddingBottom: desktop ? 40 : insets.bottom + 110,
           },
         ]}
@@ -293,13 +293,12 @@ const styles = StyleSheet.create({
   },
   petSection: {
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 16,
   },
   desktopPetSection: {
     flex: 1,
     minWidth: 0,
     paddingVertical: 12,
-    transform: [{ translateX: -36 }],
   },
   focusColumn: {
     width: '100%',
@@ -309,15 +308,13 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   bubbleWrap: {
-    marginBottom: 2,
+    marginBottom: 8,
+    alignItems: 'center',
   },
   petCharacter: {
     alignItems: 'center',
-    transform: [{ translateX: 14 }],
   },
-  desktopPetCharacter: {
-    transform: [{ translateX: 0 }],
-  },
+  desktopPetCharacter: {},
   petNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -326,20 +323,21 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   petName: {
-    fontSize: 23,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.textPrimary,
   },
   desktopPetName: {
-    fontSize: 30,
+    fontSize: 28,
   },
   petNameIcon: {
     marginLeft: 6,
-    marginTop: 4,
+    marginTop: 2,
   },
   xpBarWrap: {
-    width: '80%',
-    marginTop: 6,
+    width: '100%',
+    maxWidth: 290,
+    marginTop: 8,
   },
   card: {
     width: '100%',
@@ -375,17 +373,17 @@ const styles = StyleSheet.create({
   durationsRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 4,
-    marginTop: 12,
+    gap: 6,
+    marginTop: 14,
     padding: 4,
-    borderRadius: 15,
+    borderRadius: 16,
     backgroundColor: colors.cardAlt,
     borderWidth: 1.5,
     borderColor: colors.border,
   },
   durationOption: {
     flex: 1,
-    minHeight: 38,
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
@@ -417,8 +415,10 @@ const styles = StyleSheet.create({
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    gap: 8,
+    justifyContent: 'center',
+    marginTop: 14,
+    gap: 10,
+    width: '100%',
   },
   desktopControlsRow: {
     width: '100%',

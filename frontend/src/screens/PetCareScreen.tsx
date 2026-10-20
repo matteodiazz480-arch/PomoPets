@@ -24,7 +24,7 @@ export default function PetCareScreen() {
   const desktop = width >= 900;
   const petSize = desktop
     ? Math.min(440, height * 0.5, (width - 328) * 0.42)
-    : Math.min(390, width * 0.96, height * 0.48);
+    : Math.min(210, height * 0.28, width * 0.58);
   const statTrackWidth = desktop
     ? Math.max(120, Math.min(340, (width - 328) * 0.42 - 56))
     : Math.min(520, width) - SHEET_PADDING_H * 2;
@@ -149,12 +149,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mobileStageAreaShift: {
-    transform: [{ translateX: 14 }],
-  },
-  desktopStageAreaShift: {
-    transform: [{ translateX: -28 }],
-  },
+  mobileStageAreaShift: {},
+  desktopStageAreaShift: {},
   desktopLayout: {
     flex: 1,
   },
@@ -166,7 +162,7 @@ const styles = StyleSheet.create({
   nameBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -6,
+    marginTop: 8,
     backgroundColor: colors.card,
     borderRadius: 20,
     paddingHorizontal: 18,
@@ -196,12 +192,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingHorizontal: SHEET_PADDING_H,
     borderWidth: 2,
     borderColor: colors.border,
-    borderBottomWidth: 5,
-    borderBottomColor: '#E6D5BF',
+    borderBottomWidth: 0,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 1,

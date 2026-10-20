@@ -32,7 +32,7 @@ export default function SpeechBubble({ text, large = false }: Props) {
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
-    maxWidth: 260,
+    maxWidth: 280,
   },
   bubble: {
     backgroundColor: colors.card,

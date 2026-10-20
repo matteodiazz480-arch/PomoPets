@@ -72,10 +72,23 @@ export default function ProgressScreen() {
             {EVOLUTION_STAGES.map((stage) => {
               const unlocked = level >= stage.minLevel;
               const isCurrent = stage.id === currentStage.id;
+              const frameSize = desktop ? 74 : 60;
+              const spriteWidth = frameSize * (677 / 369);
               return (
                 <View key={stage.id} style={[styles.stageCard, desktop && styles.desktopStageCard, isCurrent && styles.stageCardActive]}>
                   <View style={[styles.stageImageWrap, desktop && styles.desktopStageImageWrap, !unlocked && styles.stageImageLocked]}>
-                    <Image source={stage.eyesOpen} style={[styles.stageImage, desktop && styles.desktopStageImage]} resizeMode="contain" />
+                    <Image
+                      source={stage.eyesOpen}
+                      style={[
+                        styles.stageSprite,
+                        {
+                          width: spriteWidth,
+                          height: frameSize,
+                          left: (frameSize - spriteWidth) / 2,
+                        },
+                      ]}
+                      resizeMode="contain"
+                    />
                   </View>
                   <View style={styles.stageInfo}>
                     <View style={styles.stageHeaderRow}>
@@ -300,8 +313,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.primaryDeep,
   },
   stageImageWrap: {
-    width: 64,
-    height: 64,
+    width: 60,
+    height: 60,
     borderRadius: 18,
     backgroundColor: colors.cardAlt,
     borderWidth: 2,
@@ -309,23 +322,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+    overflow: 'hidden',
+    position: 'relative',
   },
   desktopStageImageWrap: {
-    width: 78,
-    height: 78,
+    width: 74,
+    height: 74,
     borderRadius: 21,
     marginRight: 18,
   },
   stageImageLocked: {
     opacity: 0.35,
   },
-  stageImage: {
-    width: 48,
-    height: 48,
-  },
-  desktopStageImage: {
-    width: 62,
-    height: 62,
+  stageSprite: {
+    position: 'absolute',
+    top: 0,
   },
   stageInfo: {
     flex: 1,

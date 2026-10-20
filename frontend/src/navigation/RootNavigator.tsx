@@ -94,7 +94,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             >
               <Ionicons
                 name={focused ? meta.iconFocused : meta.icon}
-                size={desktop ? 24 : 18}
+                size={desktop ? 24 : 21}
                 color={focused ? colors.primaryDark : colors.textSecondary}
               />
               <Text
@@ -245,9 +245,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: colors.textSecondary,
+    marginTop: 1,
   },
   desktopTabLabel: {
     fontSize: 15,
