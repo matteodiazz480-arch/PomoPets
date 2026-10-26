@@ -1,22 +1,21 @@
-import React, { useEffect, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useRef, ComponentProps } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
 
 type Props = {
-  icon: string;
+  icon?: string;
+  iconName?: ComponentProps<typeof Ionicons>['name'];
   value: number;
   fillColor: string;
   /** Optional label shown above the bar — omit for the compact icon+bar+% pill look. */
   label?: string;
-  /** Fixed pixel width for the track. Percent-of-flex widths only resolve against a
-   *  parent with a *definite* size, so a hard-coded number sidesteps that ambiguity
-   *  entirely — the fill can never silently collapse. */
   trackWidth?: number;
 };
 
 const TRACK_HEIGHT = 8;
 
-export default function StatBar({ icon, value, fillColor, label, trackWidth = 54 }: Props) {
+export default function StatBar({ icon, iconName, value, fillColor, label, trackWidth = 54 }: Props) {
   const pct = Math.max(0, Math.min(100, Math.round(value)));
   const anim = useRef(new Animated.Value(pct)).current;
 
@@ -35,12 +34,19 @@ export default function StatBar({ icon, value, fillColor, label, trackWidth = 54
     extrapolate: 'clamp',
   });
 
+  const renderIcon = (size: number) => {
+    if (iconName) {
+      return <Ionicons name={iconName} size={size} color={fillColor} />;
+    }
+    return <Text style={{ fontSize: size }}>{icon}</Text>;
+  };
+
   if (label) {
     return (
       <View style={styles.labeled}>
         <View style={styles.labeledHeader}>
           <View style={styles.labeledIconWrap}>
-            <Text style={styles.labeledIcon}>{icon}</Text>
+            {renderIcon(15)}
           </View>
           <Text style={styles.label}>{label}</Text>
           <Text style={[styles.percent, { color: fillColor }]}>{pct}%</Text>
@@ -53,79 +59,64 @@ export default function StatBar({ icon, value, fillColor, label, trackWidth = 54
   }
 
   return (
-    <View style={styles.pill}>
-      <Text style={styles.icon}>{icon}</Text>
+    <View style={styles.compactPill}>
+      <View style={styles.compactIconWrap}>{renderIcon(13)}</View>
       <View style={[styles.track, { width: trackWidth }]}>
         <Animated.View style={[styles.fill, { width: fillWidth, backgroundColor: fillColor }]} />
       </View>
-      <Text style={styles.percent}>{pct}%</Text>
+      <Text style={[styles.percent, { color: fillColor }]}>{pct}%</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    borderWidth: 2,
-    borderColor: '#E6D5BF',
-    borderBottomWidth: 4,
-    borderBottomColor: '#D9C5AB',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  icon: {
-    fontSize: 13,
-    marginRight: 6,
-  },
   labeled: {
     width: '100%',
   },
   labeledHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   labeledIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.cardAlt,
+    width: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
-  },
-  labeledIcon: {
-    fontSize: 14,
+    marginRight: 6,
   },
   label: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
     color: colors.textPrimary,
+  },
+  percent: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 12,
   },
   track: {
     height: TRACK_HEIGHT,
+    backgroundColor: '#EBE3D7',
     borderRadius: TRACK_HEIGHT / 2,
-    backgroundColor: colors.border,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
     borderRadius: TRACK_HEIGHT / 2,
   },
-  percent: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginLeft: 6,
-    minWidth: 30,
+  compactPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 7,
+  },
+  compactIconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

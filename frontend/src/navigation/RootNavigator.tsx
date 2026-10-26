@@ -170,19 +170,31 @@ export default function RootNavigator() {
       (typeof navigator !== 'undefined' &&
         !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) &&
         width >= 600));
-  const [bypassedPc, setBypassedPc] = useState(false);
+  const [bypassedPc, setBypassedPc] = useState(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.sessionStorage) {
+      return window.sessionStorage.getItem('pomopets:bypass_pc') === 'true';
+    }
+    return false;
+  });
   const desktop = width >= 900;
   const { state } = useGame();
 
+  const handleBypass = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.sessionStorage) {
+      window.sessionStorage.setItem('pomopets:bypass_pc', 'true');
+    }
+    setBypassedPc(true);
+  };
+
   if (isDesktop && !bypassedPc) {
-    return <PcNotAvailableScreen onBypass={() => setBypassedPc(true)} />;
+    return <PcNotAvailableScreen onBypass={handleBypass} />;
   }
 
   return (
     <View style={styles.root}>
       {desktop && (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          <HabitatBackground theme={state.activeBackground} />
+          <HabitatBackground />
         </View>
       )}
       <NavigationContainer

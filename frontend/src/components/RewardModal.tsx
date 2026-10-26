@@ -1,8 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
 import PrimaryButton from './PrimaryButton';
 import CoinIcon from './CoinIcon';
+import ConfettiEffect from './ConfettiEffect';
 
 type Props = {
   visible: boolean;
@@ -15,13 +17,18 @@ export default function RewardModal({ visible, xp, coins, onClose }: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
+        {/* Optimized lag-free Confetti explosion on timer completion */}
+        <ConfettiEffect active={visible} />
+
         <View style={styles.card}>
-          <Text style={styles.emoji}>🎉</Text>
+          <View style={styles.trophyIconWrap}>
+            <Ionicons name="trophy" size={42} color={colors.coin} />
+          </View>
           <Text style={styles.title}>¡Sesión completada!</Text>
           <Text style={styles.subtitle}>Tu mascota está orgullosa de ti</Text>
           <View style={styles.rewardsRow}>
             <View style={styles.rewardPill}>
-              <Text style={styles.rewardIcon}>✨</Text>
+              <Ionicons name="sparkles" size={14} color="#F59E0B" style={{ marginRight: 5 }} />
               <Text style={styles.rewardText}>+{xp} XP</Text>
             </View>
             <View style={[styles.rewardPill, styles.coinPill]}>
@@ -58,52 +65,60 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.primaryDeep,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOpacity: 1,
+    shadowRadius: 18,
+    elevation: 8,
   },
-  emoji: {
-    fontSize: 48,
-    marginBottom: 8,
+  trophyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#FDE68A',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 22,
     color: colors.textPrimary,
+    textAlign: 'center',
   },
   subtitle: {
+    fontFamily: 'Nunito_600SemiBold',
     fontSize: 13,
     color: colors.textSecondary,
+    textAlign: 'center',
     marginTop: 4,
     marginBottom: 18,
-    fontWeight: '500',
   },
   rewardsRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 22,
+    gap: 10,
+    marginBottom: 20,
   },
   rewardPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFEBFF',
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 2,
-    borderColor: colors.accentPurple,
-    borderBottomWidth: 4,
+    backgroundColor: colors.cardAlt,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   coinPill: {
-    backgroundColor: '#FFF3D6',
-    borderColor: colors.coinDark,
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
   },
   rewardIcon: {
     marginRight: 6,
   },
   rewardText: {
-    fontWeight: '700',
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 14,
     color: colors.textPrimary,
-    fontSize: 15,
   },
 });

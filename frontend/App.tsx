@@ -8,6 +8,7 @@ import {
   Nunito_700Bold,
   Nunito_800ExtraBold,
 } from '@expo-google-fonts/nunito';
+import { initAdMob } from './src/ads/admob';
 import { initAudio } from './src/audio/sounds';
 import { GameProvider } from './src/context/GameContext';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -26,6 +27,7 @@ export default function App() {
 
   useEffect(() => {
     initAudio();
+    initAdMob();
     requestNotificationPermissions();
   }, []);
 

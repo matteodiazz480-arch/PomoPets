@@ -1,6 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, View } from 'react-native';
+import { useGame } from '../context/GameContext';
+import AccessoryOverlay from './AccessoryOverlay';
+import type { AccessoryCategory, AccessoryId } from '../data/accessories';
 
 type Props = {
   eyesOpen: any;
@@ -8,6 +12,7 @@ type Props = {
   size?: number;
   /** Bump this number (e.g. +1) whenever the pet is fed to trigger the reaction animation. */
   feedSignal?: number;
+  equipped?: Partial<Record<AccessoryCategory, AccessoryId>>;
 };
 
 const BREATH_DURATION = 1700;
@@ -17,7 +22,13 @@ const BLINK_INTERVAL_MIN_MS = 5000;
 const BLINK_INTERVAL_VARIANCE_MS = 3000;
 const BLINK_DURATION_MS = 120;
 
-export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal = 0 }: Props) {
+export default function PetAvatar({
+  eyesOpen,
+  eyesClosed,
+  size = 260,
+  feedSignal = 0,
+  equipped,
+}: Props) {
   const [blinking, setBlinking] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const imageWidth = size * (677 / 369);
@@ -26,6 +37,9 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
   const sparkle = useRef(new Animated.Value(0)).current;
   const isFirstFeedSignal = useRef(true);
   const isFocused = useIsFocused();
+
+  const game = useGame();
+  const activeEquipped = equipped ?? game?.state?.equippedAccessories ?? {};
 
   useEffect(() => {
     let mounted = true;
@@ -39,8 +53,6 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
     };
   }, []);
 
-  // Rock-solid breathing loop using recursive start rather than Animated.loop,
-  // which avoids freezing on Android devices and when switching tabs.
   useEffect(() => {
     if (!isFocused) {
       breath.setValue(0);
@@ -78,7 +90,6 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
     };
   }, [breath, isFocused]);
 
-  // Happy bounce + floating heart whenever the pet is fed
   useEffect(() => {
     if (isFirstFeedSignal.current) {
       isFirstFeedSignal.current = false;
@@ -176,9 +187,13 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
             ]}
             resizeMode="contain"
           />
+
+          {/* Equipped Hats, Glasses, Bowties, Scarves */}
+          <AccessoryOverlay equipped={activeEquipped} size={size} />
         </Animated.View>
       </Animated.View>
 
+      {/* Feed Heart Floating Reaction */}
       <Animated.View
         pointerEvents="none"
         style={[
@@ -186,7 +201,7 @@ export default function PetAvatar({ eyesOpen, eyesClosed, size = 260, feedSignal
           { opacity: sparkleOpacity, transform: [{ translateY: sparkleTranslateY }] },
         ]}
       >
-        <Text style={styles.sparkleText}>💛</Text>
+        <Ionicons name="heart" size={32} color="#FF7AB0" />
       </Animated.View>
     </View>
   );
@@ -199,7 +214,7 @@ const styles = StyleSheet.create({
   },
   petImageFrame: {
     position: 'absolute',
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   petSprite: {
     position: 'absolute',
@@ -212,8 +227,5 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '16%',
     alignSelf: 'center',
-  },
-  sparkleText: {
-    fontSize: 26,
   },
 });

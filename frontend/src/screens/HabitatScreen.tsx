@@ -156,7 +156,7 @@ export default function HabitatScreen() {
   );
 
   return (
-    <HabitatBackground theme={state.activeBackground} transparentDesktop={desktop}>
+    <HabitatBackground transparentDesktop={desktop}>
       <TopBar coins={state.coins} streak={state.streak} onAddCoins={() => setCoinStoreVisible(true)} desktop={desktop} />
 
       <ScrollView
@@ -201,8 +201,8 @@ export default function HabitatScreen() {
             <View style={[styles.card, desktop && styles.desktopCard]}>
               <Text style={[styles.phaseLabel, desktop && styles.desktopPhaseLabel]}>
                 {phase === 'idle' && 'Listo para estudiar'}
-                {phase === 'focus' && '🎯 Enfoque en curso'}
-                {phase === 'break' && '☕ Descanso'}
+                {phase === 'focus' && 'Enfoque en curso'}
+                {phase === 'break' && 'Tiempo de Descanso'}
               </Text>
 
               <TimerRing

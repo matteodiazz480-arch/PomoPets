@@ -1,17 +1,24 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
-import IconBubble from '../components/IconBubble';
+import { AccessoryPreview } from '../components/AccessoryOverlay';
 import CoinIcon from '../components/CoinIcon';
+import CoinStoreModal from '../components/CoinStoreModal';
 import { useGame } from '../context/GameContext';
 import { SHOP_FOODS } from '../data/food';
-import { SHOP_BACKGROUNDS } from '../data/shop';
+import { ACCESSORIES, type AccessoryCategory } from '../data/accessories';
 import { colors } from '../theme/colors';
 
-type Category = 'backgrounds' | 'food';
+type Category = 'food' | 'accessories';
+
+const CATEGORY_NAMES: Record<AccessoryCategory, string> = {
+  head: 'Cabeza',
+  face: 'Rostro',
+  neck: 'Cuello',
+};
 
 function ShopItemCard({
   style,
@@ -55,8 +62,15 @@ export default function ShopScreen() {
   const width = useWindowDimensions().width;
   const desktop = width >= 900;
   const wide = width >= 1200;
-  const { state, buyBackground, buyFood } = useGame();
-  const [category, setCategory] = useState<Category>('backgrounds');
+  const {
+    state,
+    buyFood,
+    buyAccessory,
+    equipAccessory,
+    unequipAccessory,
+  } = useGame();
+  const [category, setCategory] = useState<Category>('food');
+  const [coinStoreVisible, setCoinStoreVisible] = useState(false);
 
   return (
     <View style={styles.root}>
@@ -69,17 +83,26 @@ export default function ShopScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.title}>Tienda</Text>
-          <View style={styles.coinPill}>
+          <TouchableOpacity
+            style={styles.coinPill}
+            activeOpacity={0.8}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+              playSound('tap');
+              setCoinStoreVisible(true);
+            }}
+          >
             <CoinIcon size={22} style={styles.coinIconBubble} />
             <Text style={styles.coinValue}>{state.coins}</Text>
-          </View>
+            <Ionicons name="add-circle" size={16} color={colors.primary} style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.segmentWrap}>
           {(
             [
-              { key: 'backgrounds', label: 'Fondos' },
-              { key: 'food', label: 'Comida' },
+              { key: 'food', label: '🍎 Comida' },
+              { key: 'accessories', label: ' Accesorios' },
             ] as const
           ).map((seg) => {
             const active = category === seg.key;
@@ -100,51 +123,7 @@ export default function ShopScreen() {
           })}
         </View>
 
-        {category === 'backgrounds' ? (
-          <>
-            <Text style={styles.subtitle}>Personaliza el hábitat de tu mascota</Text>
-            <View style={[styles.grid, desktop && styles.desktopGrid]}>
-              {SHOP_BACKGROUNDS.map((item) => {
-                const owned = state.ownedBackgrounds.includes(item.id);
-                const active = state.activeBackground === item.id;
-                return (
-                  <ShopItemCard
-                    key={item.id}
-                    style={[
-                      styles.itemCard,
-                      desktop && styles.desktopItemCard,
-                      wide && styles.wideItemCard,
-                      active && styles.itemCardActive,
-                    ]}
-                    onPress={() => {
-                      if (active) return;
-                      const wasOwned = owned;
-                      const success = buyBackground(item.id, item.price);
-                      if (!success) playSound('denied');
-                      else if (!wasOwned && item.price > 0) playSound('coin');
-                      else playSound('tap');
-                    }}
-                  >
-                    <LinearGradient colors={item.colors} style={styles.itemPreview}>
-                      <Text style={styles.itemIcon}>{item.icon}</Text>
-                    </LinearGradient>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                    {active ? (
-                      <Text style={styles.activeLabel}>En uso</Text>
-                    ) : owned ? (
-                      <Text style={styles.ownedLabel}>Aplicar</Text>
-                    ) : (
-                      <View style={styles.priceRow}>
-                        <CoinIcon size={18} style={styles.priceIconBubble} />
-                        <Text style={styles.priceValue}>{item.price}</Text>
-                      </View>
-                    )}
-                  </ShopItemCard>
-                );
-              })}
-            </View>
-          </>
-        ) : (
+        {category === 'food' && (
           <>
             <Text style={styles.subtitle}>Snacks y pociones para cuidar a tu mascota</Text>
             <View style={[styles.grid, desktop && styles.desktopGrid]}>
@@ -165,7 +144,7 @@ export default function ShopScreen() {
                     }}
                   >
                     <View style={styles.foodPreview}>
-                      <Text style={styles.itemIcon}>{item.icon}</Text>
+                      <Text style={styles.itemEmoji}>{item.icon}</Text>
                       {owned > 0 && (
                         <View style={styles.ownedBadge}>
                           <Text style={styles.ownedBadgeText}>{owned}</Text>
@@ -188,7 +167,58 @@ export default function ShopScreen() {
             </View>
           </>
         )}
+
+        {category === 'accessories' && (
+          <>
+            <Text style={styles.subtitle}>Toca un accesorio para equiparlo a tu mascota</Text>
+            <View style={[styles.grid, desktop && styles.desktopGrid]}>
+              {ACCESSORIES.map((item) => {
+                const owned = (state.ownedAccessories ?? []).includes(item.id);
+                const isEquipped = state.equippedAccessories?.[item.category] === item.id;
+                return (
+                  <ShopItemCard
+                    key={item.id}
+                    style={[
+                      styles.itemCard,
+                      desktop && styles.desktopItemCard,
+                      wide && styles.wideItemCard,
+                      isEquipped && styles.itemCardActive,
+                    ]}
+                    onPress={() => {
+                      if (isEquipped) {
+                        unequipAccessory(item.category);
+                      } else if (owned) {
+                        equipAccessory(item.id);
+                      } else {
+                        const success = buyAccessory(item.id, item.price);
+                        if (!success) playSound('denied');
+                        else playSound('coin');
+                      }
+                    }}
+                  >
+                    <View style={styles.accessoryPreview}>
+                      <AccessoryPreview id={item.id} size={58} />
+                      <View style={styles.catPill}>
+                        <Text style={styles.catPillText}>{CATEGORY_NAMES[item.category]}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemDescription}>{item.description}</Text>
+                    {isEquipped ? (
+                      <Text style={styles.activeLabel}>✓ Puesto</Text>
+                    ) : owned ? (
+                      <Text style={styles.ownedLabel}>Equipar</Text>
+                    ) : (
+                      <Text style={styles.freeLabel}>Gratis</Text>
+                    )}
+                  </ShopItemCard>
+                );
+              })}
+            </View>
+          </>
+        )}
       </ScrollView>
+      <CoinStoreModal visible={coinStoreVisible} onClose={() => setCoinStoreVisible(false)} />
     </View>
   );
 }
@@ -238,48 +268,73 @@ const styles = StyleSheet.create({
   coinValue: { fontWeight: '700', color: colors.textPrimary },
   subtitle: {
     color: colors.textSecondary,
+    fontSize: 14,
     fontWeight: '500',
     marginTop: 6,
-    marginBottom: 20,
+    marginBottom: 14,
   },
   segmentWrap: {
     flexDirection: 'row',
-    backgroundColor: '#F2E4D5',
-    borderRadius: 18,
-    padding: 5,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 4,
     marginTop: 18,
-    marginBottom: 4,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 1,
   },
   segmentItem: {
     flex: 1,
-    minHeight: 44,
-    justifyContent: 'center',
     paddingVertical: 8,
     borderRadius: 12,
     alignItems: 'center',
   },
   segmentItemActive: {
     backgroundColor: colors.primary,
-    borderWidth: 2,
-    borderColor: colors.primaryDark,
-    borderBottomWidth: 4,
-    borderBottomColor: colors.primaryDeep,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 5,
-    elevation: 2,
   },
   segmentLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
   },
   segmentLabelActive: {
-    color: colors.white,
+    color: '#ffffff',
     fontWeight: '800',
+  },
+  avatarPreviewBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 22,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.7,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 12,
+  },
+  avatarPreviewInfo: {
+    flex: 1,
+  },
+  avatarPreviewTitle: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 16,
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  avatarPreviewSub: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 16,
   },
   grid: {
     flexDirection: 'row',
@@ -287,120 +342,130 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   desktopGrid: {
-    gap: 16,
+    gap: 18,
   },
   itemCard: {
-    flex: 1,
-    minWidth: '46%',
-    maxWidth: '49%',
+    width: '48%',
     backgroundColor: colors.card,
-    borderRadius: 22,
+    borderRadius: 20,
     padding: 12,
-    alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.border,
-    borderBottomWidth: 4,
-    borderBottomColor: '#E6D5BF',
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.85,
     shadowRadius: 10,
-    elevation: 4,
+    elevation: 3,
   },
   desktopItemCard: {
-    flex: 0,
-    minWidth: '47%',
-    maxWidth: '48%',
-    width: '47%',
-    padding: 18,
-    borderRadius: 26,
+    width: '31%',
   },
   wideItemCard: {
-    minWidth: '31%',
-    maxWidth: '32%',
-    width: '31.5%',
+    width: '23.4%',
   },
   itemCardActive: {
-    borderColor: colors.primaryDark,
-    borderBottomColor: colors.primaryDeep,
-  },
-  itemPreview: {
-    width: '100%',
-    height: 96,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.8)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  itemIcon: {
-    fontSize: 30,
-  },
-  itemName: {
-    fontWeight: '700',
-    color: colors.textPrimary,
-    fontSize: 14,
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  priceIconBubble: { marginRight: 4 },
-  priceValue: { fontWeight: '700', color: colors.coinDark, fontSize: 13 },
-  ownedLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.secondaryDark,
-  },
-  activeLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.success,
+    borderColor: colors.primary,
+    backgroundColor: '#FFFBEB',
   },
   foodPreview: {
     width: '100%',
-    height: 96,
-    borderRadius: 16,
-    backgroundColor: colors.cardAlt,
+    aspectRatio: 1.25,
+    borderRadius: 14,
+    backgroundColor: colors.hungerBg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: colors.border,
+    marginBottom: 8,
+    position: 'relative',
   },
-  ownedBadge: {
+  accessoryPreview: {
+    width: '100%',
+    aspectRatio: 1.25,
+    borderRadius: 14,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    position: 'relative',
+  },
+  catPill: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
-  ownedBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.white,
+  catPillText: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 9,
+    color: '#78350F',
+  },
+  itemEmoji: {
+    fontSize: 40,
+  },
+  itemName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   itemDescription: {
     fontSize: 11,
     color: colors.textSecondary,
-    fontWeight: '500',
     textAlign: 'center',
+    lineHeight: 14,
     marginBottom: 8,
   },
   foodStatsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginBottom: 8,
   },
   foodStat: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  priceIconBubble: {},
+  priceValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  activeLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  freeLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.success,
+  },
+  ownedLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  ownedBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: colors.card,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  ownedBadgeText: {
     fontSize: 11,
     fontWeight: '700',
     color: colors.textPrimary,

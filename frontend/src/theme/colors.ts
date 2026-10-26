@@ -28,6 +28,10 @@ export const colors = {
   hungerBg: '#FFE7D2',
   happiness: '#FF7AB0',
   happinessBg: '#FFE2EF',
+  cleanliness: '#4EA8DE',
+  cleanlinessBg: '#E0F7FE',
+  dirt: '#8D6E63',
+  dirtDark: '#5D4037',
 
   textPrimary: '#4A3B34',
   textSecondary: '#9C8778',

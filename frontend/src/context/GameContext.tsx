@@ -4,6 +4,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { playSound } from '../audio/sounds';
 import { getFoodById, type FoodId } from '../data/food';
 import { getMissionById, type MissionId } from '../data/missions';
+import { getAccessoryById, ALL_ACCESSORY_IDS, type AccessoryCategory, type AccessoryId } from '../data/accessories';
 import {
   cancelCareReminder,
   cancelNotification,
@@ -19,14 +20,12 @@ import {
   XP_PER_MINUTE,
   XP_SESSION_BONUS,
 } from '../data/progression';
-import type { BackgroundThemeId } from '../theme/colors';
 
 const STORAGE_KEY = 'pomopets:v1';
 
 const MAX_STAT = 100;
-// Bumped from 20 → 32 per day so hunger/happiness need attention more often —
-// a livelier day-to-day care loop instead of barely moving between sessions.
-const STAT_DECAY_PER_DAY = 32;
+// Accelerated hunger & metabolism decay so pet requires regular caring
+const STAT_DECAY_PER_DAY = 55;
 
 type TimerPhase = 'idle' | 'focus' | 'break';
 
@@ -45,8 +44,6 @@ type GameState = {
   lastStudyDate: string | null; // yyyy-mm-dd
   pomodoroMinutes: number;
   breakMinutes: number;
-  ownedBackgrounds: BackgroundThemeId[];
-  activeBackground: BackgroundThemeId;
   sessionsCompletedToday: number;
   minutesStudiedToday: number;
   minutesStudiedTotal: number;
@@ -55,6 +52,8 @@ type GameState = {
   hunger: number;
   happiness: number;
   inventory: Partial<Record<FoodId, number>>;
+  ownedAccessories: AccessoryId[];
+  equippedAccessories: Partial<Record<AccessoryCategory, AccessoryId>>;
   lastStatsDecayDate: string | null;
   feedsToday: number;
   // Timer snapshot, persisted purely so the countdown survives the app being
@@ -74,8 +73,6 @@ const DEFAULT_STATE: GameState = {
   lastStudyDate: null,
   pomodoroMinutes: 25,
   breakMinutes: 5,
-  ownedBackgrounds: ['sky'],
-  activeBackground: 'sky',
   sessionsCompletedToday: 0,
   minutesStudiedToday: 0,
   minutesStudiedTotal: 0,
@@ -84,6 +81,8 @@ const DEFAULT_STATE: GameState = {
   hunger: 100,
   happiness: 100,
   inventory: {},
+  ownedAccessories: ALL_ACCESSORY_IDS,
+  equippedAccessories: { face: 'glasses_round' },
   lastStatsDecayDate: null,
   feedsToday: 0,
   timerPhase: 'idle',
@@ -120,13 +119,15 @@ type GameContextValue = {
   reset: () => void;
   setPomodoroMinutes: (minutes: number) => void;
   setBreakMinutes: (minutes: number) => void;
-  buyBackground: (id: BackgroundThemeId, price: number) => boolean;
-  setActiveBackground: (id: BackgroundThemeId) => void;
   lastReward: { xp: number; coins: number } | null;
   clearLastReward: () => void;
   claimMission: (id: MissionId) => boolean;
   buyFood: (id: FoodId, price: number) => boolean;
   feedPet: (id: FoodId) => boolean;
+  buyAccessory: (id: AccessoryId, price: number) => boolean;
+  equipAccessory: (id: AccessoryId) => void;
+  unequipAccessory: (category: AccessoryCategory) => void;
+  rewardCoins: (amount: number) => void;
   setPetName: (name: string) => void;
   addTask: (text: string) => void;
   toggleTask: (id: string) => void;
@@ -218,6 +219,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         missionsDate: today,
         claimedMissions: isNewMissionDay ? [] : prev.claimedMissions,
         feedsToday: isNewMissionDay ? 0 : prev.feedsToday,
+        hunger: Math.max(0, prev.hunger - 14),
         lastStatsDecayDate: today,
       };
     });
@@ -281,6 +283,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = { ...DEFAULT_STATE, ...JSON.parse(raw) } as GameState;
+          // Ensure all accessories are unlocked for free test & exploration
+          parsed.ownedAccessories = Array.from(new Set([...(parsed.ownedAccessories ?? []), ...ALL_ACCESSORY_IDS]));
           setState(parsed);
           resyncTimer(parsed);
         }
@@ -325,7 +329,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         if (daysSinceStudy >= 2) streak = 0;
       }
 
-      const changed = missionReset || hunger !== prev.hunger || happiness !== prev.happiness || streak !== prev.streak;
+      const changed =
+        missionReset ||
+        hunger !== prev.hunger ||
+        happiness !== prev.happiness ||
+        streak !== prev.streak;
       if (!changed) return prev;
 
       return {
@@ -510,31 +518,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, breakMinutes: minutes }));
   }, []);
 
-  const buyBackground = useCallback((id: BackgroundThemeId, price: number) => {
-    let success = false;
-    setState((prev) => {
-      if (prev.ownedBackgrounds.includes(id)) {
-        success = true;
-        return { ...prev, activeBackground: id };
-      }
-      if (prev.coins < price) return prev;
-      success = true;
-      return {
-        ...prev,
-        coins: prev.coins - price,
-        ownedBackgrounds: [...prev.ownedBackgrounds, id],
-        activeBackground: id,
-      };
-    });
-    return success;
-  }, []);
-
-  const setActiveBackground = useCallback((id: BackgroundThemeId) => {
-    setState((prev) =>
-      prev.ownedBackgrounds.includes(id) ? { ...prev, activeBackground: id } : prev
-    );
-  }, []);
-
   const buyFood = useCallback((id: FoodId, price: number) => {
     let success = false;
     setState((prev) => {
@@ -556,9 +539,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const food = getFoodById(id);
       if (owned <= 0 || !food) return prev;
       success = true;
-      // Played here (inside the updater), not after setState — the same pattern
-      // claimMission/completeFocusSession use, since a `success` flag read right
-      // after setState isn't guaranteed to see this updater having run yet.
       playSound('feed');
       return {
         ...prev,
@@ -569,6 +549,65 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       };
     });
     return success;
+  }, []);
+
+  const buyAccessory = useCallback((id: AccessoryId, price: number) => {
+    let success = false;
+    setState((prev) => {
+      const owned = prev.ownedAccessories ?? [];
+      if (owned.includes(id)) return prev;
+      if (prev.coins < price) return prev;
+      success = true;
+      const acc = getAccessoryById(id);
+      const category = acc ? acc.category : null;
+      playSound('success');
+      return {
+        ...prev,
+        coins: prev.coins - price,
+        ownedAccessories: [...owned, id],
+        equippedAccessories: category
+          ? { ...(prev.equippedAccessories ?? {}), [category]: id }
+          : (prev.equippedAccessories ?? {}),
+      };
+    });
+    return success;
+  }, []);
+
+  const equipAccessory = useCallback((id: AccessoryId) => {
+    const acc = getAccessoryById(id);
+    if (!acc) return;
+    playSound('tap');
+    setState((prev) => {
+      const owned = prev.ownedAccessories ?? [];
+      if (!owned.includes(id)) return prev;
+      return {
+        ...prev,
+        equippedAccessories: {
+          ...(prev.equippedAccessories ?? {}),
+          [acc.category]: id,
+        },
+      };
+    });
+  }, []);
+
+  const unequipAccessory = useCallback((category: AccessoryCategory) => {
+    playSound('tap');
+    setState((prev) => {
+      const updated = { ...(prev.equippedAccessories ?? {}) };
+      delete updated[category];
+      return {
+        ...prev,
+        equippedAccessories: updated,
+      };
+    });
+  }, []);
+
+  const rewardCoins = useCallback((amount: number) => {
+    playSound('coin');
+    setState((prev) => ({
+      ...prev,
+      coins: prev.coins + amount,
+    }));
   }, []);
 
   const setPetName = useCallback((name: string) => {
@@ -611,13 +650,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     reset,
     setPomodoroMinutes,
     setBreakMinutes,
-    buyBackground,
-    setActiveBackground,
     lastReward,
     clearLastReward: () => setLastReward(null),
     claimMission,
     buyFood,
     feedPet,
+    buyAccessory,
+    equipAccessory,
+    unequipAccessory,
+    rewardCoins,
     setPetName,
     addTask,
     toggleTask,

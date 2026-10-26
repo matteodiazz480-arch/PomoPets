@@ -8,9 +8,19 @@
     "userInterfaceStyle": "light",
     "backgroundColor": "#EAF6FF",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pomopets.app",
+      "infoPlist": {
+        "GADApplicationIdentifier": "ca-app-pub-7765029109255049~4223502727",
+        "SKAdNetworkItems": [
+          {
+            "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork"
+          }
+        ]
+      }
     },
     "android": {
+      "package": "com.pomopets.app",
       "adaptiveIcon": {
         "backgroundColor": "#EAF6FF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -24,7 +34,14 @@
     },
     "plugins": [
       "expo-font",
-      "expo-audio"
+      "expo-audio",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-7765029109255049~4223502727",
+          "iosAppId": "ca-app-pub-7765029109255049~4223502727"
+        }
+      ]
     ]
   }
 }
