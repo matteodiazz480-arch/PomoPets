@@ -12,10 +12,11 @@ type Props = {
   coins: number;
   streak: number;
   onAddCoins?: () => void;
+  onOpenTournament?: () => void;
   desktop?: boolean;
 };
 
-export default function TopBar({ coins, streak, onAddCoins, desktop = false }: Props) {
+export default function TopBar({ coins, streak, onAddCoins, onOpenTournament, desktop = false }: Props) {
   const insets = useSafeAreaInsets();
   const addScale = useRef(new Animated.Value(1)).current;
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -93,6 +94,25 @@ export default function TopBar({ coins, streak, onAddCoins, desktop = false }: P
       </View>
 
       <View style={styles.rightGroup}>
+        {onOpenTournament && (
+          <TouchableOpacity
+            style={[styles.pill, styles.tournamentPill, desktop && styles.desktopPill]}
+            activeOpacity={0.85}
+            onPress={() => {
+              try {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+              } catch {}
+              playSound('tap');
+              onOpenTournament();
+            }}
+          >
+            <Ionicons name="trophy" size={desktop ? 20 : 16} color="#D97706" />
+            <Text style={[styles.value, styles.tournamentValue, desktop && styles.desktopValue]}>
+              Torneo
+            </Text>
+          </TouchableOpacity>
+        )}
+
         <View style={[styles.pill, styles.streakPill, desktop && styles.desktopPill]}>
           <IconBubble
             icon="🔥"
@@ -200,6 +220,15 @@ const styles = StyleSheet.create({
   },
   streakPill: {
     backgroundColor: colors.streakBg,
+  },
+  tournamentPill: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+  },
+  tournamentValue: {
+    color: '#B45309',
+    fontSize: 13,
+    fontWeight: '800',
   },
   addButton: {
     width: 32,

@@ -95,7 +95,7 @@ function DurationButton({
   );
 }
 
-export default function HabitatScreen() {
+export default function HabitatScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const desktop = width >= 900;
@@ -157,7 +157,13 @@ export default function HabitatScreen() {
 
   return (
     <HabitatBackground transparentDesktop={desktop}>
-      <TopBar coins={state.coins} streak={state.streak} onAddCoins={() => setCoinStoreVisible(true)} desktop={desktop} />
+      <TopBar
+        coins={state.coins}
+        streak={state.streak}
+        onAddCoins={() => setCoinStoreVisible(true)}
+        onOpenTournament={() => navigation?.navigate('Torneo')}
+        desktop={desktop}
+      />
 
       <ScrollView
         contentContainerStyle={[

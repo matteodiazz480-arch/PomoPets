@@ -1,13 +1,15 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { playSound } from '../audio/sounds';
 import MissionCard from '../components/MissionCard';
 import { useGame } from '../context/GameContext';
 import { getDailyMissions } from '../data/missions';
 import { EVOLUTION_STAGES, getStageForLevel } from '../data/pets';
 import { colors } from '../theme/colors';
 
-export default function ProgressScreen() {
+export default function ProgressScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const width = useWindowDimensions().width;
   const desktop = width >= 900;
@@ -57,6 +59,27 @@ export default function ProgressScreen() {
             <View style={[styles.xpFill, { width: `${Math.min(1, xpIntoLevel / xpToNext) * 100}%` }]} />
           </View>
         </View>
+
+        {/* Banner de Acceso al Torneo */}
+        <TouchableOpacity
+          style={styles.tournamentBanner}
+          activeOpacity={0.88}
+          onPress={() => {
+            playSound('tap');
+            navigation?.navigate('Torneo');
+          }}
+        >
+          <View style={styles.tournamentBannerIcon}>
+            <Ionicons name="trophy" size={24} color="#D97706" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.tournamentBannerTitle}>Torneo Global de Estudio</Text>
+            <Text style={styles.tournamentBannerSub}>
+              Compara tus horas de foco y sube al podio de Google Firestore.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
 
         <View style={[styles.desktopSections, wide && styles.desktopSectionsWide]}>
           <View style={styles.progressSection}>
@@ -398,5 +421,41 @@ const styles = StyleSheet.create({
   desktopStageLevel: {
     fontSize: 13,
     marginTop: 7,
+  },
+  tournamentBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderRadius: 20,
+    padding: 14,
+    borderWidth: 2,
+    borderColor: '#FDE68A',
+    marginTop: 14,
+    gap: 12,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  tournamentBannerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tournamentBannerTitle: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  tournamentBannerSub: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 15,
   },
 });
