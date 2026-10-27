@@ -27,7 +27,8 @@ function calculateDaysUntilSunday(): { days: number; hours: number } {
   const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
   const endOfDay = new Date(now);
   endOfDay.setHours(23, 59, 59, 999);
-  const diffMs = endOfDay.getTime() - now.getTime() + (daysUntilSunday > 0 ? (daysUntilSunday - 1) * 86400000 : 0);
+  const diffMs =
+    endOfDay.getTime() - now.getTime() + (daysUntilSunday > 0 ? (daysUntilSunday - 1) * 86400000 : 0);
   const totalHours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
@@ -37,7 +38,7 @@ function calculateDaysUntilSunday(): { days: number; hours: number } {
 function PlayerAvatar({
   photoUrl,
   name,
-  size = 46,
+  size = 44,
   borderColor = colors.primary,
 }: {
   photoUrl?: string;
@@ -63,9 +64,38 @@ function PlayerAvatar({
         <Image source={{ uri: photoUrl }} style={[styles.avatarImg, { borderRadius: size / 2 }]} />
       ) : (
         <View style={[styles.avatarLetterFallback, { borderRadius: size / 2 }]}>
-          <Text style={[styles.avatarLetter, { fontSize: size * 0.45 }]}>{initial}</Text>
+          <Text style={[styles.avatarLetter, { fontSize: size * 0.44 }]}>{initial}</Text>
         </View>
       )}
+    </View>
+  );
+}
+
+function RankBadge({ rank }: { rank: number }) {
+  if (rank === 1) {
+    return (
+      <View style={[styles.rankBadge, styles.rankBadgeGold]}>
+        <Text style={styles.rankMedalEmoji}>🥇</Text>
+      </View>
+    );
+  }
+  if (rank === 2) {
+    return (
+      <View style={[styles.rankBadge, styles.rankBadgeSilver]}>
+        <Text style={styles.rankMedalEmoji}>🥈</Text>
+      </View>
+    );
+  }
+  if (rank === 3) {
+    return (
+      <View style={[styles.rankBadge, styles.rankBadgeBronze]}>
+        <Text style={styles.rankMedalEmoji}>🥉</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.rankBadgeDefault}>
+      <Text style={styles.rankNumberText}>{rank}</Text>
     </View>
   );
 }
@@ -84,18 +114,13 @@ export default function TournamentScreen() {
 
   const timeLeft = calculateDaysUntilSunday();
 
-  // Sync current user and listen to real-time updates from Firestore
   useEffect(() => {
     setLoading(true);
-
-    // 1. Initial sync to ensure player is in Firestore
     syncScoreToCloud().catch(() => {});
 
-    // 2. Real-time subscription to Firestore leaderboard
     const unsubscribe = subscribeToLeaderboard(criteria, (realPlayers) => {
-      // Ensure current user is in the list even if offline or just created
       const exists = realPlayers.some((p) => p.id === state.playerId);
-      let list = [...realPlayers];
+      const list = [...realPlayers];
 
       if (!exists && state.playerId) {
         list.push({
@@ -141,14 +166,8 @@ export default function TournamentScreen() {
     return `${hrs}h ${mins}m`;
   };
 
-  // Find user's position in ranking
   const myIndex = players.findIndex((p) => p.id === state.playerId);
   const myRank = myIndex !== -1 ? myIndex + 1 : 1;
-
-  const top1 = players[0];
-  const top2 = players[1];
-  const top3 = players[2];
-  const restPlayers = players.slice(3);
 
   return (
     <View style={styles.root}>
@@ -164,11 +183,11 @@ export default function TournamentScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Torneo Semanal</Text>
-            <Text style={styles.subtitle}>Compite con estudiantes de todo el mundo</Text>
+            <Text style={styles.title}>Tabla de Clasificación</Text>
+            <Text style={styles.subtitle}>Ranking semanal de estudiantes en tiempo real</Text>
           </View>
           <TouchableOpacity
-            style={styles.profileBtn}
+            style={styles.editProfileChip}
             activeOpacity={0.85}
             onPress={() => {
               playSound('tap');
@@ -177,46 +196,83 @@ export default function TournamentScreen() {
           >
             <PlayerAvatar
               photoUrl={state.photoUrl || undefined}
-              name={state.playerName}
-              size={38}
+              name={state.playerName || 'T'}
+              size={30}
               borderColor={colors.primary}
             />
+            <Text style={styles.editProfileChipText}>Mi Perfil</Text>
+            <Ionicons name="pencil" size={12} color={colors.primaryDark} />
           </TouchableOpacity>
         </View>
 
-        {/* Weekly Countdown & Rewards Banner */}
-        <View style={styles.tournamentBannerCard}>
-          <View style={styles.bannerTopRow}>
-            <View style={styles.seasonBadge}>
-              <Ionicons name="flame" size={14} color="#D97706" />
-              <Text style={styles.seasonBadgeText}>Temporada Semanal</Text>
+        {/* Weekly Season & Prizes Strip */}
+        <View style={styles.seasonCard}>
+          <View style={styles.seasonTopRow}>
+            <View style={styles.seasonTag}>
+              <Ionicons name="trophy" size={14} color="#D97706" />
+              <Text style={styles.seasonTagText}>Torneo Semanal</Text>
             </View>
-            <View style={styles.timerPill}>
-              <Ionicons name="hourglass-outline" size={13} color="#92400E" />
-              <Text style={styles.timerPillText}>
-                {timeLeft.days > 0 ? `${timeLeft.days}d ${timeLeft.hours}h restantes` : `${timeLeft.hours}h restantes`}
+            <View style={styles.countdownTag}>
+              <Ionicons name="time-outline" size={13} color="#92400E" />
+              <Text style={styles.countdownTagText}>
+                {timeLeft.days > 0
+                  ? `Termina en ${timeLeft.days}d ${timeLeft.hours}h`
+                  : `Termina en ${timeLeft.hours}h`}
               </Text>
             </View>
           </View>
 
-          <Text style={styles.bannerPrizeTitle}>Recompensas para los Ganadores:</Text>
-          <View style={styles.prizesRow}>
-            <View style={styles.prizeItem}>
-              <Text style={styles.prizeMedal}>🥇</Text>
-              <Text style={styles.prizeText}>+500 Monedas</Text>
+          <View style={styles.prizesBar}>
+            <View style={styles.prizePill}>
+              <Text style={styles.prizeIcon}>🥇 1°</Text>
+              <Text style={styles.prizeVal}>+500</Text>
             </View>
-            <View style={styles.prizeItem}>
-              <Text style={styles.prizeMedal}>🥈</Text>
-              <Text style={styles.prizeText}>+300 Monedas</Text>
+            <View style={styles.prizePill}>
+              <Text style={styles.prizeIcon}>🥈 2°</Text>
+              <Text style={styles.prizeVal}>+300</Text>
             </View>
-            <View style={styles.prizeItem}>
-              <Text style={styles.prizeMedal}>🥉</Text>
-              <Text style={styles.prizeText}>+150 Monedas</Text>
+            <View style={styles.prizePill}>
+              <Text style={styles.prizeIcon}>🥉 3°</Text>
+              <Text style={styles.prizeVal}>+150</Text>
             </View>
           </View>
         </View>
 
-        {/* Criteria Switcher Tabs */}
+        {/* Your Current Position Summary Bar */}
+        <TouchableOpacity
+          style={styles.mySummaryBar}
+          activeOpacity={0.9}
+          onPress={() => {
+            playSound('tap');
+            setProfileModalVisible(true);
+          }}
+        >
+          <View style={styles.myRankBadge}>
+            <Text style={styles.myRankBadgeLabel}>TU PUESTO</Text>
+            <Text style={styles.myRankBadgeNumber}>#{myRank}</Text>
+          </View>
+
+          <PlayerAvatar
+            photoUrl={state.photoUrl || undefined}
+            name={state.playerName || 'J'}
+            size={44}
+            borderColor={colors.primary}
+          />
+
+          <View style={styles.mySummaryInfo}>
+            <View style={styles.myNameRow}>
+              <Text style={styles.mySummaryName} numberOfLines={1}>
+                {state.playerName ? state.playerName : 'Toca para elegir tu nombre'}
+              </Text>
+              <Ionicons name="pencil-sharp" size={13} color={colors.primaryDark} />
+            </View>
+            <Text style={styles.mySummaryStats}>
+              Nv. {level} • ⏱️ {formatHoursAndMinutes(state.minutesStudiedTotal)} • ⭐ {state.totalXp} XP
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Sort Criteria Selector */}
         <View style={styles.criteriaWrap}>
           <TouchableOpacity
             style={[styles.criteriaTab, criteria === 'xp' && styles.criteriaTabActive]}
@@ -229,12 +285,12 @@ export default function TournamentScreen() {
           >
             <Ionicons
               name="sparkles"
-              size={16}
+              size={15}
               color={criteria === 'xp' ? '#FFFFFF' : colors.textSecondary}
               style={{ marginRight: 6 }}
             />
             <Text style={[styles.criteriaText, criteria === 'xp' && styles.criteriaTextActive]}>
-              Por Experiencia (EXP)
+              Ordenar por EXP
             </Text>
           </TouchableOpacity>
 
@@ -249,184 +305,163 @@ export default function TournamentScreen() {
           >
             <Ionicons
               name="time"
-              size={16}
+              size={15}
               color={criteria === 'hours' ? '#FFFFFF' : colors.textSecondary}
               style={{ marginRight: 6 }}
             />
             <Text style={[styles.criteriaText, criteria === 'hours' && styles.criteriaTextActive]}>
-              Por Horas de Estudio
+              Ordenar por Horas
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Current User Card */}
-        <TouchableOpacity
-          style={styles.myCard}
-          activeOpacity={0.9}
-          onPress={() => {
-            playSound('tap');
-            setProfileModalVisible(true);
-          }}
-        >
-          <View style={styles.myRankCircle}>
-            <Text style={styles.myRankText}>#{myRank}</Text>
-          </View>
-          <PlayerAvatar
-            photoUrl={state.photoUrl || undefined}
-            name={state.playerName}
-            size={48}
-            borderColor={colors.primary}
-          />
-          <View style={styles.myInfo}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.myName} numberOfLines={1}>
-                {state.playerName ? `${state.playerName} (Tú)` : 'Toca para poner tu nombre ✏️'}
-              </Text>
-              <Ionicons name="pencil-sharp" size={13} color={colors.primary} />
-            </View>
-            <Text style={styles.mySub}>
-              Nv. {level} • 🔥 {state.streak}d racha
+        {/* Traditional Leaderboard Table */}
+        <View style={styles.leaderboardCard}>
+          {/* Table Column Headers */}
+          <View style={styles.tableHeader}>
+            <Text style={[styles.colHeader, styles.colRank]}>#</Text>
+            <Text style={[styles.colHeader, styles.colPlayer]}>JUGADOR</Text>
+            <Text
+              style={[
+                styles.colHeader,
+                styles.colHours,
+                criteria === 'hours' && styles.colHeaderActive,
+              ]}
+            >
+              ESTUDIO
+            </Text>
+            <Text
+              style={[
+                styles.colHeader,
+                styles.colXp,
+                criteria === 'xp' && styles.colHeaderActive,
+              ]}
+            >
+              EXP
             </Text>
           </View>
-          <View style={styles.myScorePill}>
-            <Text style={styles.myScoreValue}>
-              {criteria === 'xp' ? `${state.totalXp} XP` : formatHoursAndMinutes(state.minutesStudiedTotal)}
-            </Text>
-          </View>
-        </TouchableOpacity>
 
-        {loading ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Cargando participantes del torneo...</Text>
-          </View>
-        ) : (
-          <>
-            {/* Cartoon Podium (Top 3) */}
-            <View style={styles.podiumContainer}>
-              {/* 2nd Place */}
-              {top2 && (
-                <View style={[styles.podiumItem, styles.podiumSecond]}>
-                  <Text style={styles.podiumMedal}>🥈</Text>
-                  <PlayerAvatar
-                    photoUrl={top2.photoUrl}
-                    name={top2.name}
-                    size={52}
-                    borderColor="#94A3B8"
-                  />
-                  <Text style={styles.podiumName} numberOfLines={1}>{top2.name}</Text>
-                  <Text style={styles.podiumScore}>
-                    {criteria === 'xp' ? `${top2.totalXp} XP` : formatHoursAndMinutes(top2.minutesStudied)}
-                  </Text>
-                  <View style={[styles.podiumBar, styles.podiumBarSecond]}>
-                    <Text style={styles.podiumNumber}>2</Text>
-                  </View>
-                </View>
-              )}
-
-              {/* 1st Place */}
-              {top1 && (
-                <View style={[styles.podiumItem, styles.podiumFirst]}>
-                  <Text style={styles.podiumCrown}>👑</Text>
-                  <PlayerAvatar
-                    photoUrl={top1.photoUrl}
-                    name={top1.name}
-                    size={64}
-                    borderColor="#F59E0B"
-                  />
-                  <Text style={[styles.podiumName, styles.podiumNameFirst]} numberOfLines={1}>
-                    {top1.name}
-                  </Text>
-                  <Text style={[styles.podiumScore, styles.podiumScoreFirst]}>
-                    {criteria === 'xp' ? `${top1.totalXp} XP` : formatHoursAndMinutes(top1.minutesStudied)}
-                  </Text>
-                  <View style={[styles.podiumBar, styles.podiumBarFirst]}>
-                    <Text style={[styles.podiumNumber, { color: '#B45309' }]}>1</Text>
-                  </View>
-                </View>
-              )}
-
-              {/* 3rd Place */}
-              {top3 && (
-                <View style={[styles.podiumItem, styles.podiumThird]}>
-                  <Text style={styles.podiumMedal}>🥉</Text>
-                  <PlayerAvatar
-                    photoUrl={top3.photoUrl}
-                    name={top3.name}
-                    size={52}
-                    borderColor="#CD7F32"
-                  />
-                  <Text style={styles.podiumName} numberOfLines={1}>{top3.name}</Text>
-                  <Text style={styles.podiumScore}>
-                    {criteria === 'xp' ? `${top3.totalXp} XP` : formatHoursAndMinutes(top3.minutesStudied)}
-                  </Text>
-                  <View style={[styles.podiumBar, styles.podiumBarThird]}>
-                    <Text style={styles.podiumNumber}>3</Text>
-                  </View>
-                </View>
-              )}
+          {loading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingText}>Cargando tabla de clasificación...</Text>
             </View>
+          ) : (
+            players.map((player, index) => {
+              const rank = index + 1;
+              const isMe = player.id === state.playerId;
+              const isTop1 = rank === 1;
+              const isTop2 = rank === 2;
+              const isTop3 = rank === 3;
 
-            {/* Rest of Real Players List */}
-            {restPlayers.length > 0 && (
-              <View style={styles.list}>
-                {restPlayers.map((player, idx) => {
-                  const rank = idx + 4;
-                  const isMe = player.id === state.playerId;
-                  return (
-                    <View key={player.id} style={[styles.row, isMe && styles.rowHighlight]}>
-                      <Text style={[styles.rankNumber, isMe && styles.rankNumberMe]}>{rank}</Text>
-                      <PlayerAvatar
-                        photoUrl={player.photoUrl}
-                        name={player.name}
-                        size={38}
-                        borderColor={isMe ? colors.primary : colors.border}
-                      />
-                      <View style={styles.rowInfo}>
-                        <Text style={[styles.rowName, isMe && styles.rowNameMe]} numberOfLines={1}>
-                          {player.name} {isMe ? '(Tú)' : ''}
+              const avatarBorderColor = isTop1
+                ? '#F59E0B'
+                : isTop2
+                  ? '#94A3B8'
+                  : isTop3
+                    ? '#D97706'
+                    : isMe
+                      ? colors.primary
+                      : colors.border;
+
+              return (
+                <View
+                  key={player.id}
+                  style={[
+                    styles.tableRow,
+                    isTop1 && styles.rowTop1,
+                    isTop2 && styles.rowTop2,
+                    isTop3 && styles.rowTop3,
+                    isMe && styles.rowMe,
+                    index === players.length - 1 && { borderBottomWidth: 0 },
+                  ]}
+                >
+                  {/* Column 1: Position / Rank */}
+                  <View style={styles.colRank}>
+                    <RankBadge rank={rank} />
+                  </View>
+
+                  {/* Column 2: Avatar + Name + Level + Streak */}
+                  <View style={styles.colPlayer}>
+                    <PlayerAvatar
+                      photoUrl={player.photoUrl}
+                      name={player.name}
+                      size={42}
+                      borderColor={avatarBorderColor}
+                    />
+                    <View style={styles.playerTextWrap}>
+                      <View style={styles.playerNameRow}>
+                        <Text
+                          style={[
+                            styles.playerNameText,
+                            isTop1 && styles.playerNameTop1,
+                            isMe && styles.playerNameMe,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {player.name}
                         </Text>
-                        <View style={styles.rowMeta}>
-                          <View style={styles.levelPill}>
-                            <Text style={styles.levelPillText}>Nv. {player.level}</Text>
+                        {isMe && (
+                          <View style={styles.youTag}>
+                            <Text style={styles.youTagText}>TÚ</Text>
                           </View>
-                          {player.streak > 0 && (
-                            <Text style={styles.streakText}>🔥 {player.streak}d</Text>
-                          )}
-                        </View>
+                        )}
                       </View>
-                      <View style={styles.rowScoreWrap}>
-                        <Text style={[styles.rowScore, isMe && styles.rowScoreMe]}>
-                          {criteria === 'xp'
-                            ? `${player.totalXp} XP`
-                            : formatHoursAndMinutes(player.minutesStudied)}
-                        </Text>
-                        <Text style={styles.rowScoreSub}>
-                          {criteria === 'xp'
-                            ? formatHoursAndMinutes(player.minutesStudied)
-                            : `${player.totalXp} XP`}
-                        </Text>
+                      <View style={styles.playerSubRow}>
+                        <View style={styles.levelBadge}>
+                          <Text style={styles.levelBadgeText}>Nv. {player.level}</Text>
+                        </View>
+                        {player.streak > 0 && (
+                          <Text style={styles.streakMeta}>🔥 {player.streak}d</Text>
+                        )}
                       </View>
                     </View>
-                  );
-                })}
-              </View>
-            )}
+                  </View>
 
-            {players.length === 1 && (
-              <View style={styles.singlePlayerCard}>
-                <Ionicons name="sparkles" size={28} color="#D97706" style={{ marginBottom: 6 }} />
-                <Text style={styles.singlePlayerTitle}>¡Vas en el puesto #1!</Text>
-                <Text style={styles.singlePlayerDesc}>
-                  Completa tus sesiones de estudio y anima a tus compañeros a unirse para verlos aquí.
-                </Text>
-              </View>
-            )}
-          </>
-        )}
+                  {/* Column 3: Study Hours */}
+                  <View style={styles.colHours}>
+                    <View
+                      style={[
+                        styles.statPill,
+                        criteria === 'hours' && styles.statPillActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statPillText,
+                          criteria === 'hours' && styles.statPillTextActive,
+                        ]}
+                      >
+                        {formatHoursAndMinutes(player.minutesStudied)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Column 4: Total EXP */}
+                  <View style={styles.colXp}>
+                    <View
+                      style={[
+                        styles.statPill,
+                        criteria === 'xp' && styles.statPillActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statPillText,
+                          criteria === 'xp' && styles.statPillTextActive,
+                        ]}
+                      >
+                        {player.totalXp} XP
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </View>
       </ScrollView>
 
-      {/* Profile & Photo Modal */}
       <ProfileModal
         visible={profileModalVisible}
         onClose={() => setProfileModalVisible(false)}
@@ -442,12 +477,12 @@ const styles = StyleSheet.create({
   },
   scroll: {
     width: '100%',
-    maxWidth: 600,
+    maxWidth: 640,
     alignSelf: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
   },
   desktopScroll: {
-    maxWidth: 860,
+    maxWidth: 880,
     paddingHorizontal: 36,
   },
   header: {
@@ -455,20 +490,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 14,
+    gap: 10,
   },
   title: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 28,
+    fontSize: 26,
     color: colors.textPrimary,
   },
   subtitle: {
     fontFamily: 'Nunito_600SemiBold',
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 12,
     marginTop: 2,
   },
-  profileBtn: {
-    padding: 3,
+  editProfileChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 2,
+    borderColor: colors.border,
+    gap: 6,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  editProfileChipText: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 12,
+    color: colors.textPrimary,
   },
   avatarContainer: {
     backgroundColor: '#FEF3C7',
@@ -492,26 +546,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_800ExtraBold',
     color: '#92400E',
   },
-  tournamentBannerCard: {
+  seasonCard: {
     backgroundColor: '#FFFDF5',
-    borderRadius: 22,
-    padding: 14,
+    borderRadius: 20,
+    padding: 12,
     borderWidth: 2,
     borderColor: '#FDE68A',
-    marginBottom: 16,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-    elevation: 2,
+    marginBottom: 12,
   },
-  bannerTopRow: {
+  seasonTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  seasonBadge: {
+  seasonTag: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF3C7',
@@ -520,58 +569,111 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 4,
   },
-  seasonBadgeText: {
+  seasonTagText: {
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 11,
     color: '#92400E',
   },
-  timerPill: {
+  countdownTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  timerPillText: {
+  countdownTagText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     color: '#92400E',
   },
-  bannerPrizeTitle: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 12,
-    color: colors.textPrimary,
-    marginBottom: 6,
-  },
-  prizesRow: {
+  prizesBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 8,
   },
-  prizeItem: {
+  prizePill: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.card,
     borderRadius: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     paddingHorizontal: 8,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     gap: 5,
   },
-  prizeMedal: {
-    fontSize: 14,
-  },
-  prizeText: {
+  prizeIcon: {
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 11,
+    color: colors.textSecondary,
+  },
+  prizeVal: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 12,
+    color: '#B45309',
+  },
+  mySummaryBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: 12,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    marginBottom: 12,
+    gap: 10,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.65,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  myRankBadge: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+    minWidth: 58,
+  },
+  myRankBadgeLabel: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 8,
+    color: '#B45309',
+    letterSpacing: 0.4,
+  },
+  myRankBadgeNumber: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 16,
+    color: '#92400E',
+  },
+  mySummaryInfo: {
+    flex: 1,
+  },
+  myNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  mySummaryName: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 14,
     color: colors.textPrimary,
+  },
+  mySummaryStats: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   criteriaWrap: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 4,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 2,
     borderColor: colors.border,
   },
@@ -580,245 +682,203 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
   },
   criteriaTabActive: {
     backgroundColor: colors.primary,
   },
   criteriaText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textSecondary,
   },
   criteriaTextActive: {
     color: '#FFFFFF',
     fontFamily: 'Nunito_800ExtraBold',
   },
-  myCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFBEB',
-    borderRadius: 22,
-    padding: 12,
-    borderWidth: 2,
-    borderColor: '#FDE68A',
-    marginBottom: 20,
-    gap: 12,
+  leaderboardCard: {
+    backgroundColor: colors.card,
+    borderRadius: 24,
+    borderWidth: 2.5,
+    borderColor: colors.border,
+    overflow: 'hidden',
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.7,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.75,
+    shadowRadius: 10,
     elevation: 3,
   },
-  myRankCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.primary,
+  tableHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F1E7',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.border,
+  },
+  colHeader: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 10,
+    color: colors.textSecondary,
+    letterSpacing: 0.6,
+  },
+  colHeaderActive: {
+    color: colors.primaryDark,
+  },
+  colRank: {
+    width: 42,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  myRankText: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 15,
-    color: '#FFFFFF',
-  },
-  myInfo: {
+  colPlayer: {
     flex: 1,
-  },
-  myName: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
-  mySub: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  myScorePill: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  myScoreValue: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 13,
-    color: '#B45309',
-  },
-  podiumContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingRight: 6,
+  },
+  colHours: {
+    width: 68,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colXp: {
+    width: 74,
     alignItems: 'flex-end',
     justifyContent: 'center',
-    marginBottom: 22,
-    gap: 8,
-    paddingTop: 10,
   },
-  podiumItem: {
+  tableRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#F3EAE0',
   },
-  podiumFirst: {
-    flex: 1.15,
+  rowTop1: {
+    backgroundColor: '#FFFDF0',
   },
-  podiumSecond: {
-    flex: 0.95,
+  rowTop2: {
+    backgroundColor: '#FAFCFF',
   },
-  podiumThird: {
-    flex: 0.95,
+  rowTop3: {
+    backgroundColor: '#FFF9F5',
   },
-  podiumCrown: {
-    fontSize: 22,
-    marginBottom: 4,
+  rowMe: {
+    backgroundColor: '#FFF6E3',
   },
-  podiumMedal: {
-    fontSize: 20,
-    marginBottom: 4,
+  rankBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
   },
-  podiumName: {
+  rankBadgeGold: {
+    backgroundColor: '#FEF08A',
+    borderColor: '#F59E0B',
+  },
+  rankBadgeSilver: {
+    backgroundColor: '#E2E8F0',
+    borderColor: '#94A3B8',
+  },
+  rankBadgeBronze: {
+    backgroundColor: '#FFEDD5',
+    borderColor: '#FB923C',
+  },
+  rankMedalEmoji: {
+    fontSize: 16,
+  },
+  rankBadgeDefault: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F5EFE6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  rankNumberText: {
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 12,
     color: colors.textPrimary,
-    textAlign: 'center',
-    maxWidth: 90,
-    marginTop: 6,
   },
-  podiumNameFirst: {
-    fontSize: 13,
-    color: '#92400E',
-  },
-  podiumScore: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 2,
-    marginBottom: 8,
-  },
-  podiumScoreFirst: {
-    color: '#B45309',
-    fontWeight: '800',
-  },
-  podiumBar: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  podiumBarFirst: {
-    height: 98,
-    backgroundColor: '#FDE68A',
-    borderWidth: 2,
-    borderColor: '#F59E0B',
-    borderBottomWidth: 0,
-  },
-  podiumBarSecond: {
-    height: 74,
-    backgroundColor: '#E2E8F0',
-    borderWidth: 2,
-    borderColor: '#94A3B8',
-    borderBottomWidth: 0,
-  },
-  podiumBarThird: {
-    height: 54,
-    backgroundColor: '#FFEDD5',
-    borderWidth: 2,
-    borderColor: '#FB923C',
-    borderBottomWidth: 0,
-  },
-  podiumNumber: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 24,
-    color: '#64748B',
-  },
-  list: {
-    backgroundColor: colors.card,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    paddingVertical: 4,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    gap: 10,
-  },
-  rowHighlight: {
-    backgroundColor: '#FEF3C7',
-  },
-  rankNumber: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 14,
-    color: colors.textSecondary,
-    width: 22,
-    textAlign: 'center',
-  },
-  rankNumberMe: {
-    color: colors.primaryDark,
-  },
-  rowInfo: {
+  playerTextWrap: {
     flex: 1,
   },
-  rowName: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  rowNameMe: {
-    color: '#92400E',
-    fontWeight: '800',
-  },
-  rowMeta: {
+  playerNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 3,
+    gap: 5,
   },
-  levelPill: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 8,
-  },
-  levelPillText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  streakText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  rowScoreWrap: {
-    alignItems: 'flex-end',
-  },
-  rowScore: {
+  playerNameText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textPrimary,
+    flexShrink: 1,
   },
-  rowScoreMe: {
-    color: '#B45309',
+  playerNameTop1: {
+    color: '#92400E',
   },
-  rowScoreSub: {
-    fontFamily: 'Nunito_600SemiBold',
+  playerNameMe: {
+    color: colors.primaryDeep,
+  },
+  youTag: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  youTagText: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 9,
+    color: '#FFFFFF',
+  },
+  playerSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  levelBadge: {
+    backgroundColor: '#F1EAE0',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  levelBadgeText: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 9,
+    color: colors.textSecondary,
+  },
+  streakMeta: {
+    fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     color: colors.textSecondary,
-    marginTop: 1,
+  },
+  statPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: 'transparent',
+  },
+  statPillActive: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  statPillText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  statPillTextActive: {
+    fontFamily: 'Nunito_800ExtraBold',
+    color: '#92400E',
   },
   loadingBox: {
     paddingVertical: 40,
@@ -829,28 +889,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     fontFamily: 'Nunito_600SemiBold',
-  },
-  singlePlayerCard: {
-    backgroundColor: '#FFFDF5',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#FDE68A',
-    alignItems: 'center',
-    marginTop: 14,
-    textAlign: 'center',
-  },
-  singlePlayerTitle: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 15,
-    color: '#B45309',
-  },
-  singlePlayerDesc: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
-    lineHeight: 16,
   },
 });

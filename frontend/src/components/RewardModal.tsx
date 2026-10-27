@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
+import BlurredModal from './BlurredModal';
 import PrimaryButton from './PrimaryButton';
 import CoinIcon from './CoinIcon';
 import ConfettiEffect from './ConfettiEffect';
@@ -15,42 +16,35 @@ type Props = {
 
 export default function RewardModal({ visible, xp, coins, onClose }: Props) {
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        {/* Optimized lag-free Confetti explosion on timer completion */}
-        <ConfettiEffect active={visible} />
-
-        <View style={styles.card}>
-          <View style={styles.trophyIconWrap}>
-            <Ionicons name="trophy" size={42} color={colors.coin} />
-          </View>
-          <Text style={styles.title}>¡Sesión completada!</Text>
-          <Text style={styles.subtitle}>Tu mascota está orgullosa de ti</Text>
-          <View style={styles.rewardsRow}>
-            <View style={styles.rewardPill}>
-              <Ionicons name="sparkles" size={14} color="#F59E0B" style={{ marginRight: 5 }} />
-              <Text style={styles.rewardText}>+{xp} XP</Text>
-            </View>
-            <View style={[styles.rewardPill, styles.coinPill]}>
-              <CoinIcon size={18} style={styles.rewardIcon} />
-              <Text style={styles.rewardText}>+{coins}</Text>
-            </View>
-          </View>
-          <PrimaryButton label="Continuar" onPress={onClose} />
+    <BlurredModal
+      visible={visible}
+      onClose={onClose}
+      align="center"
+      overlayChildren={<ConfettiEffect active={visible} />}
+    >
+      <View style={styles.card}>
+        <View style={styles.trophyIconWrap}>
+          <Ionicons name="trophy" size={42} color={colors.coin} />
         </View>
+        <Text style={styles.title}>¡Sesión completada!</Text>
+        <Text style={styles.subtitle}>Tu mascota está orgullosa de ti</Text>
+        <View style={styles.rewardsRow}>
+          <View style={styles.rewardPill}>
+            <Ionicons name="sparkles" size={14} color="#F59E0B" style={{ marginRight: 5 }} />
+            <Text style={styles.rewardText}>+{xp} XP</Text>
+          </View>
+          <View style={[styles.rewardPill, styles.coinPill]}>
+            <CoinIcon size={18} style={styles.rewardIcon} />
+            <Text style={styles.rewardText}>+{coins}</Text>
+          </View>
+        </View>
+        <PrimaryButton label="Continuar" onPress={onClose} />
       </View>
-    </Modal>
+    </BlurredModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
   card: {
     width: '100%',
     maxWidth: 340,

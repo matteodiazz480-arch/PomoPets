@@ -4,18 +4,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { loadRewardedAd, showRewardedAd } from '../ads/admob';
 import { playSound } from '../audio/sounds';
 import { useGame } from '../context/GameContext';
 import { colors } from '../theme/colors';
+import BlurredModal from './BlurredModal';
 import CoinIcon from './CoinIcon';
 
 type Props = {
@@ -126,25 +125,18 @@ export default function CoinStoreModal({ visible, onClose }: Props) {
   });
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <View style={styles.overlay}>
-        <TouchableWithoutFeedback onPress={handleClose}>
-          <View style={styles.backdropTouch} />
-        </TouchableWithoutFeedback>
-
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-
-          <TouchableOpacity
-            style={styles.closeButton}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            activeOpacity={0.85}
-            onPress={handleClose}
-          >
-            <View style={styles.closeButtonInner}>
-              <Ionicons name="close" size={18} color={colors.textPrimary} />
-            </View>
-          </TouchableOpacity>
+    <BlurredModal visible={visible} onClose={handleClose} align="center">
+      <View style={styles.sheet}>
+        <TouchableOpacity
+          style={styles.closeButton}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.85}
+          onPress={handleClose}
+        >
+          <View style={styles.closeButtonInner}>
+            <Ionicons name="close" size={18} color={colors.textPrimary} />
+          </View>
+        </TouchableOpacity>
 
           {watchingAd ? (
             <View style={styles.adPlayerContainer}>
@@ -264,38 +256,26 @@ export default function CoinStoreModal({ visible, onClose }: Props) {
             </>
           )}
         </View>
-      </View>
-    </Modal>
+    </BlurredModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  backdropTouch: {
-    ...StyleSheet.absoluteFill,
-  },
   sheet: {
+    width: '100%',
     backgroundColor: colors.appBg,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    borderTopWidth: 2,
+    borderRadius: 28,
+    borderWidth: 2.5,
     borderColor: colors.border,
-    paddingTop: 12,
+    paddingTop: 22,
     paddingHorizontal: 20,
-    paddingBottom: 28,
-    maxHeight: '86%',
-  },
-  handle: {
-    width: 40,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: colors.border,
-    alignSelf: 'center',
-    marginBottom: 12,
+    paddingBottom: 24,
+    maxHeight: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
+    elevation: 10,
   },
   closeButton: {
     position: 'absolute',

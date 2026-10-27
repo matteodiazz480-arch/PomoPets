@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors } from '../theme/colors';
+import BlurredModal from './BlurredModal';
 import PrimaryButton from './PrimaryButton';
 
 type Props = {
@@ -27,51 +28,42 @@ export default function RenameModal({ visible, initialName, onSave, onClose }: P
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.emoji}>✏️</Text>
-          <Text style={styles.title}>Nombra a tu mascota</Text>
-          <Text style={styles.subtitle}>Elige el nombre con el que la vas a llamar</Text>
+    <BlurredModal visible={visible} onClose={onClose} align="center">
+      <View style={styles.card}>
+        <Text style={styles.emoji}>✏️</Text>
+        <Text style={styles.title}>Nombra a tu mascota</Text>
+        <Text style={styles.subtitle}>Elige el nombre con el que la vas a llamar</Text>
 
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            maxLength={MAX_LENGTH}
-            placeholder="Nombre de tu mascota"
-            placeholderTextColor={colors.textSecondary}
-            style={styles.input}
-            autoFocus
-            returnKeyType="done"
-            onSubmitEditing={handleSave}
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          maxLength={MAX_LENGTH}
+          placeholder="Nombre de tu mascota"
+          placeholderTextColor={colors.textSecondary}
+          style={styles.input}
+          autoFocus
+          returnKeyType="done"
+          onSubmitEditing={handleSave}
+        />
+        <Text style={styles.counter}>
+          {draft.trim().length}/{MAX_LENGTH}
+        </Text>
+
+        <View style={styles.actions}>
+          <PrimaryButton label="Cancelar" variant="secondary" onPress={onClose} sound="tap" />
+          <PrimaryButton
+            label="Guardar"
+            onPress={handleSave}
+            disabled={draft.trim().length === 0}
+            sound="tap"
           />
-          <Text style={styles.counter}>
-            {draft.trim().length}/{MAX_LENGTH}
-          </Text>
-
-          <View style={styles.actions}>
-            <PrimaryButton label="Cancelar" variant="secondary" onPress={onClose} sound="tap" />
-            <PrimaryButton
-              label="Guardar"
-              onPress={handleSave}
-              disabled={draft.trim().length === 0}
-              sound="tap"
-            />
-          </View>
         </View>
       </View>
-    </Modal>
+    </BlurredModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
   card: {
     width: '100%',
     maxWidth: 340,
@@ -80,6 +72,8 @@ const styles = StyleSheet.create({
     paddingVertical: 26,
     paddingHorizontal: 24,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.border,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.8,

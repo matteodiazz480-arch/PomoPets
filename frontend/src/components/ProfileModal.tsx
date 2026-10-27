@@ -5,13 +5,11 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { playSound } from '../audio/sounds';
@@ -19,6 +17,7 @@ import { useGame } from '../context/GameContext';
 import { levelFromTotalXp } from '../data/progression';
 import { syncPlayerScore } from '../services/firebase';
 import { colors } from '../theme/colors';
+import BlurredModal from './BlurredModal';
 
 type Props = {
   visible: boolean;
@@ -186,22 +185,15 @@ export default function ProfileModal({ visible, onClose }: Props) {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <TouchableWithoutFeedback onPress={onClose}>
-          <View style={styles.backdrop} />
-        </TouchableWithoutFeedback>
-
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-
-          <TouchableOpacity
-            style={styles.closeBtn}
-            onPress={onClose}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="close" size={20} color={colors.textPrimary} />
-          </TouchableOpacity>
+    <BlurredModal visible={visible} onClose={onClose} align="center">
+      <View style={styles.sheet}>
+        <TouchableOpacity
+          style={styles.closeBtn}
+          onPress={onClose}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="close" size={20} color={colors.textPrimary} />
+        </TouchableOpacity>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
             <Text style={styles.title}>Perfil de Jugador</Text>
@@ -304,38 +296,26 @@ export default function ProfileModal({ visible, onClose }: Props) {
             </TouchableOpacity>
           </ScrollView>
         </View>
-      </View>
-    </Modal>
+    </BlurredModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFill,
-  },
   sheet: {
+    width: '100%',
     backgroundColor: colors.appBg,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingTop: 12,
+    borderRadius: 28,
+    paddingTop: 22,
     paddingHorizontal: 20,
-    paddingBottom: 32,
+    paddingBottom: 24,
     maxHeight: '90%',
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: colors.border,
-  },
-  handle: {
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: colors.border,
-    alignSelf: 'center',
-    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
+    elevation: 10,
   },
   closeBtn: {
     position: 'absolute',
