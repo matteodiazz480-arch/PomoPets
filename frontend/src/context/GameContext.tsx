@@ -5,6 +5,7 @@ import { playSound } from '../audio/sounds';
 import { getFoodById, type FoodId } from '../data/food';
 import { getMissionById, type MissionId } from '../data/missions';
 import { getAccessoryById, ALL_ACCESSORY_IDS, type AccessoryCategory, type AccessoryId } from '../data/accessories';
+import { syncPlayerScore } from '../services/firebase';
 import {
   cancelCareReminder,
   cancelNotification,
@@ -36,6 +37,8 @@ export type Task = {
 };
 
 type GameState = {
+  playerId: string;
+  playerName: string;
   petName: string | null;
   tasks: Task[];
   coins: number;
@@ -65,6 +68,8 @@ type GameState = {
 };
 
 const DEFAULT_STATE: GameState = {
+  playerId: '',
+  playerName: 'Estudiante',
   petName: null,
   tasks: [],
   coins: 40,
@@ -129,6 +134,8 @@ type GameContextValue = {
   unequipAccessory: (category: AccessoryCategory) => void;
   rewardCoins: (amount: number) => void;
   setPetName: (name: string) => void;
+  setPlayerName: (name: string) => void;
+  syncScoreToCloud: () => Promise<boolean>;
   addTask: (text: string) => void;
   toggleTask: (id: string) => void;
   deleteTask: (id: string) => void;
@@ -201,9 +208,25 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => playSound('levelup'), 550);
       }
 
+      const updatedTotalXp = prev.totalXp + earnedXp;
+      const updatedMinutes = prev.minutesStudiedTotal + prev.pomodoroMinutes;
+
+      // Automatically sync updated score in background to Google Firestore
+      setTimeout(() => {
+        syncPlayerScore({
+          id: prev.playerId || 'player_default',
+          name: prev.playerName || 'Estudiante',
+          petName: prev.petName || 'Cornolín',
+          level: nextLevel,
+          totalXp: updatedTotalXp,
+          minutesStudied: updatedMinutes,
+          streak,
+        }).catch(() => {});
+      }, 50);
+
       return {
         ...prev,
-        totalXp: prev.totalXp + earnedXp,
+        totalXp: updatedTotalXp,
         coins: prev.coins + earnedCoins,
         streak,
         lastStudyDate: today,
@@ -215,7 +238,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         minutesStudiedToday: isNewMissionDay
           ? prev.pomodoroMinutes
           : prev.minutesStudiedToday + prev.pomodoroMinutes,
-        minutesStudiedTotal: prev.minutesStudiedTotal + prev.pomodoroMinutes,
+        minutesStudiedTotal: updatedMinutes,
         missionsDate: today,
         claimedMissions: isNewMissionDay ? [] : prev.claimedMissions,
         feedsToday: isNewMissionDay ? 0 : prev.feedsToday,
@@ -283,10 +306,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = { ...DEFAULT_STATE, ...JSON.parse(raw) } as GameState;
+          if (!parsed.playerId) {
+            parsed.playerId = 'player_' + Math.random().toString(36).substring(2, 10);
+          }
+          if (!parsed.playerName) {
+            parsed.playerName = 'Estudiante #' + Math.floor(100 + Math.random() * 900);
+          }
           // Ensure all accessories are unlocked for free test & exploration
           parsed.ownedAccessories = Array.from(new Set([...(parsed.ownedAccessories ?? []), ...ALL_ACCESSORY_IDS]));
           setState(parsed);
           resyncTimer(parsed);
+        } else {
+          setState((prev) => ({
+            ...prev,
+            playerId: 'player_' + Math.random().toString(36).substring(2, 10),
+            playerName: 'Estudiante #' + Math.floor(100 + Math.random() * 900),
+          }));
         }
       } finally {
         setLoaded(true);
@@ -615,6 +650,37 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, petName: trimmed.length > 0 ? trimmed : null }));
   }, []);
 
+  const setPlayerName = useCallback((name: string) => {
+    const trimmed = name.trim().slice(0, 24);
+    if (!trimmed) return;
+    setState((prev) => {
+      const next = { ...prev, playerName: trimmed };
+      syncPlayerScore({
+        id: next.playerId || 'player_default',
+        name: trimmed,
+        petName: next.petName || 'Cornolín',
+        level: levelFromTotalXp(next.totalXp).level,
+        totalXp: next.totalXp,
+        minutesStudied: next.minutesStudiedTotal,
+        streak: next.streak,
+      }).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const syncScoreToCloud = useCallback(async () => {
+    if (!state.playerId) return false;
+    return syncPlayerScore({
+      id: state.playerId,
+      name: state.playerName,
+      petName: state.petName || 'Cornolín',
+      level: levelFromTotalXp(state.totalXp).level,
+      totalXp: state.totalXp,
+      minutesStudied: state.minutesStudiedTotal,
+      streak: state.streak,
+    });
+  }, [state]);
+
   const addTask = useCallback((text: string) => {
     const trimmed = text.trim().slice(0, 60);
     if (trimmed.length === 0) return;
@@ -660,6 +726,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     unequipAccessory,
     rewardCoins,
     setPetName,
+    setPlayerName,
+    syncScoreToCloud,
     addTask,
     toggleTask,
     deleteTask,

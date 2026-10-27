@@ -200,26 +200,28 @@ export default function CoinStoreModal({ visible, onClose }: Props) {
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
-                {/* 1. Rewarded Ad Option */}
+                {/* 1. Rewarded Ad Option (Inhabilitado temporalmente mientras se aprueba la app en AdMob) */}
                 <TouchableOpacity
-                  style={[styles.rewardCard, styles.rewardCardHighlight]}
-                  activeOpacity={0.88}
-                  onPress={startWatchingAd}
+                  style={[styles.rewardCard, styles.rewardCardDisabled]}
+                  activeOpacity={1}
+                  disabled={true}
                 >
                   <View style={styles.cardHeaderRow}>
-                    <View style={styles.cardIconBox}>
-                      <Ionicons name="videocam-outline" size={24} color="#D97706" />
+                    <View style={[styles.cardIconBox, { backgroundColor: '#F1F5F9' }]}>
+                      <Ionicons name="videocam-outline" size={24} color="#94A3B8" />
                     </View>
                     <View style={styles.cardInfo}>
                       <Text style={styles.cardTitle}>Ver Video Recompensado</Text>
                       <Text style={styles.cardDesc}>
-                        Mira un anuncio de vídeo bonificado y recibe monedas al instante.
+                        Temporalmente no disponible mientras la tienda valida la integración de anuncios.
                       </Text>
                     </View>
                   </View>
-                  <View style={styles.claimButton}>
-                    <CoinIcon size={18} />
-                    <Text style={styles.claimButtonText}>+50 Monedas Gratis</Text>
+                  <View style={[styles.claimButton, styles.claimButtonDisabled]}>
+                    <Ionicons name="lock-closed" size={16} color="#64748B" />
+                    <Text style={[styles.claimButtonText, styles.claimButtonTextDisabled]}>
+                      Próximamente
+                    </Text>
                   </View>
                 </TouchableOpacity>
 

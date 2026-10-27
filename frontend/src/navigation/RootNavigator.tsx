@@ -13,16 +13,18 @@ import PcNotAvailableScreen from '../screens/PcNotAvailableScreen';
 import PetCareScreen from '../screens/PetCareScreen';
 import ProgressScreen from '../screens/ProgressScreen';
 import ShopScreen from '../screens/ShopScreen';
+import TournamentScreen from '../screens/TournamentScreen';
 import { colors } from '../theme/colors';
 
 const Tab = createBottomTabNavigator();
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const TABS: Record<string, { icon: IconName, iconFocused: IconName; label: string }> = {
+const TABS: Record<string, { icon: IconName; iconFocused: IconName; label: string }> = {
   Habitat: { icon: 'home-outline', iconFocused: 'home', label: 'Hábitat' },
   Mascota: { icon: 'paw-outline', iconFocused: 'paw', label: 'Mascota' },
   Tienda: { icon: 'bag-outline', iconFocused: 'bag', label: 'Tienda' },
+  Torneo: { icon: 'trophy-outline', iconFocused: 'trophy', label: 'Torneo' },
   Progreso: { icon: 'star-outline', iconFocused: 'star', label: 'Progreso' },
 };
 
@@ -48,6 +50,7 @@ function AppTabs({ desktop }: { desktop: boolean }) {
       <Tab.Screen name="Habitat" component={HabitatScreen} />
       <Tab.Screen name="Mascota" component={PetCareScreen} />
       <Tab.Screen name="Tienda" component={ShopScreen} />
+      <Tab.Screen name="Torneo" component={TournamentScreen} />
       <Tab.Screen name="Progreso" component={ProgressScreen} />
     </Tab.Navigator>
   );
