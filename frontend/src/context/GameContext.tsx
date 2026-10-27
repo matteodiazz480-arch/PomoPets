@@ -39,6 +39,7 @@ export type Task = {
 type GameState = {
   playerId: string;
   playerName: string;
+  photoUrl: string | null;
   petName: string | null;
   tasks: Task[];
   coins: number;
@@ -70,6 +71,7 @@ type GameState = {
 const DEFAULT_STATE: GameState = {
   playerId: '',
   playerName: 'Estudiante',
+  photoUrl: null,
   petName: null,
   tasks: [],
   coins: 40,
@@ -135,6 +137,7 @@ type GameContextValue = {
   rewardCoins: (amount: number) => void;
   setPetName: (name: string) => void;
   setPlayerName: (name: string) => void;
+  setPhotoUrl: (url: string | null) => void;
   syncScoreToCloud: () => Promise<boolean>;
   addTask: (text: string) => void;
   toggleTask: (id: string) => void;
@@ -221,6 +224,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           totalXp: updatedTotalXp,
           minutesStudied: updatedMinutes,
           streak,
+          photoUrl: prev.photoUrl || '',
         }).catch(() => {});
       }, 50);
 
@@ -329,6 +333,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Ensure current user is always published to Firestore as an active tournament participant
+  useEffect(() => {
+    if (!loaded || !state.playerId) return;
+    syncPlayerScore({
+      id: state.playerId,
+      name: state.playerName || 'Estudiante',
+      petName: state.petName || 'Cornolín',
+      level: levelFromTotalXp(state.totalXp).level,
+      totalXp: state.totalXp,
+      minutesStudied: state.minutesStudiedTotal,
+      streak: state.streak,
+      photoUrl: state.photoUrl || '',
+    }).catch(() => {});
+  }, [loaded, state.playerId]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -663,6 +682,24 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         totalXp: next.totalXp,
         minutesStudied: next.minutesStudiedTotal,
         streak: next.streak,
+        photoUrl: next.photoUrl || '',
+      }).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const setPhotoUrl = useCallback((url: string | null) => {
+    setState((prev) => {
+      const next = { ...prev, photoUrl: url };
+      syncPlayerScore({
+        id: next.playerId || 'player_default',
+        name: next.playerName || 'Estudiante',
+        petName: next.petName || 'Cornolín',
+        level: levelFromTotalXp(next.totalXp).level,
+        totalXp: next.totalXp,
+        minutesStudied: next.minutesStudiedTotal,
+        streak: next.streak,
+        photoUrl: url || '',
       }).catch(() => {});
       return next;
     });
@@ -678,6 +715,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       totalXp: state.totalXp,
       minutesStudied: state.minutesStudiedTotal,
       streak: state.streak,
+      photoUrl: state.photoUrl || '',
     });
   }, [state]);
 
@@ -727,6 +765,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     rewardCoins,
     setPetName,
     setPlayerName,
+    setPhotoUrl,
     syncScoreToCloud,
     addTask,
     toggleTask,

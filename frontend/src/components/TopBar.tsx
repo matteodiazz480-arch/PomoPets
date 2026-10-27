@@ -1,24 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
-import IconBubble from './IconBubble';
-import CoinIcon from './CoinIcon';
 import { colors } from '../theme/colors';
 
 type Props = {
-  coins: number;
-  streak: number;
-  onAddCoins?: () => void;
-  onOpenTournament?: () => void;
+  playerName: string;
+  photoUrl: string | null;
+  level: number;
+  onOpenProfile: () => void;
   desktop?: boolean;
 };
 
-export default function TopBar({ coins, streak, onAddCoins, onOpenTournament, desktop = false }: Props) {
+export default function TopBar({
+  playerName,
+  photoUrl,
+  level,
+  onOpenProfile,
+  desktop = false,
+}: Props) {
   const insets = useSafeAreaInsets();
-  const addScale = useRef(new Animated.Value(1)).current;
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -42,15 +45,12 @@ export default function TopBar({ coins, streak, onAddCoins, onOpenTournament, de
     }
   };
 
-  const handlePressIn = () => {
+  const handleProfilePress = () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     } catch {}
-    Animated.spring(addScale, { toValue: 0.88, friction: 8, tension: 240, useNativeDriver: true }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(addScale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }).start();
+    playSound('tap');
+    onOpenProfile();
   };
 
   return (
@@ -62,69 +62,38 @@ export default function TopBar({ coins, streak, onAddCoins, onOpenTournament, de
       ]}
       pointerEvents="box-none"
     >
-      <View style={styles.coinGroup}>
-        <View style={[styles.pill, desktop && styles.desktopPill]}>
-          <CoinIcon size={desktop ? 34 : 24} />
-          <Text style={styles.value} numberOfLines={1}>
-            {coins}
-          </Text>
+      {/* Profile Button - allows uploading and managing profile photo & name */}
+      <TouchableOpacity
+        style={[styles.profilePill, desktop && styles.desktopProfilePill]}
+        activeOpacity={0.88}
+        onPress={handleProfilePress}
+        accessibilityRole="button"
+        accessibilityLabel="Abrir perfil de jugador"
+      >
+        <View style={styles.avatarWrap}>
+          {photoUrl ? (
+            <Image source={{ uri: photoUrl }} style={styles.avatarImg} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Ionicons name="person" size={desktop ? 20 : 16} color="#64748B" />
+            </View>
+          )}
+          <View style={styles.cameraDot}>
+            <Ionicons name="camera" size={9} color="#FFFFFF" />
+          </View>
         </View>
-        {onAddCoins && (
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-            onPress={() => {
-              playSound('tap');
-              onAddCoins();
-            }}
-          >
-            <Animated.View
-              style={[
-                styles.addButton,
-                desktop && styles.desktopAddButton,
-                { transform: [{ scale: addScale }] },
-              ]}
-            >
-              <View style={styles.addButtonHighlight} pointerEvents="none" />
-              <Text style={[styles.addButtonText, desktop && styles.desktopAddButtonText]}>+</Text>
-            </Animated.View>
-          </TouchableOpacity>
-        )}
-      </View>
+
+        <View style={styles.profileTextWrap}>
+          <Text style={[styles.playerName, desktop && styles.desktopPlayerName]} numberOfLines={1}>
+            {playerName || 'Mi Perfil'}
+          </Text>
+          <View style={styles.levelBadge}>
+            <Text style={styles.levelBadgeText}>Nv. {level}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
 
       <View style={styles.rightGroup}>
-        {onOpenTournament && (
-          <TouchableOpacity
-            style={[styles.pill, styles.tournamentPill, desktop && styles.desktopPill]}
-            activeOpacity={0.85}
-            onPress={() => {
-              try {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-              } catch {}
-              playSound('tap');
-              onOpenTournament();
-            }}
-          >
-            <Ionicons name="trophy" size={desktop ? 20 : 16} color="#D97706" />
-            <Text style={[styles.value, styles.tournamentValue, desktop && styles.desktopValue]}>
-              Torneo
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        <View style={[styles.pill, styles.streakPill, desktop && styles.desktopPill]}>
-          <IconBubble
-            icon="🔥"
-            size={desktop ? 34 : 24}
-            background={colors.card}
-            borderColor={colors.streak}
-          />
-          <Text style={[styles.value, styles.streakValue, desktop && styles.desktopValue]} numberOfLines={1}>
-            {streak}
-          </Text>
-        </View>
-
         {Platform.OS === 'web' && (
           <TouchableOpacity
             style={[styles.fsButton, desktop && styles.desktopFsButton]}
@@ -149,18 +118,102 @@ const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
     top: 0,
-    width: '100%',
-    maxWidth: 600,
-    alignSelf: 'center',
+    left: 0,
+    right: 0,
+    zIndex: 20,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    zIndex: 10,
+    paddingBottom: 8,
   },
   desktopWrap: {
-    maxWidth: 1240,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingHorizontal: 32,
+    paddingBottom: 16,
+  },
+  profilePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 24,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 2,
+    borderColor: colors.border,
+    gap: 10,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.7,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  desktopProfilePill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 28,
+  },
+  avatarWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary,
+    position: 'relative',
+  },
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+  },
+  avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraDot: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 15,
+    height: 15,
+    borderRadius: 8,
+    backgroundColor: colors.primaryDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  profileTextWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  playerName: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 14,
+    color: colors.textPrimary,
+    maxWidth: 130,
+  },
+  desktopPlayerName: {
+    fontSize: 15,
+    maxWidth: 200,
+  },
+  levelBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  levelBadgeText: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 10,
+    color: '#92400E',
   },
   rightGroup: {
     flexDirection: 'row',
@@ -168,9 +221,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fsButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
@@ -178,110 +231,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
     elevation: 2,
   },
   desktopFsButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-  },
-  coinGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 1,
-    maxWidth: '70%',
-    gap: 8,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 1,
-    backgroundColor: colors.card,
-    borderRadius: 22,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.65,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  desktopPill: {
-    borderRadius: 28,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 11,
-    borderWidth: 1.5,
-  },
-  streakPill: {
-    backgroundColor: colors.streakBg,
-  },
-  tournamentPill: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FDE68A',
-  },
-  tournamentValue: {
-    color: '#B45309',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  addButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.coin,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.coinDark,
-    borderBottomWidth: 4,
-    borderBottomColor: colors.coinDeep,
-    overflow: 'hidden',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  desktopAddButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-  },
-  addButtonHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '46%',
-    backgroundColor: 'rgba(255,255,255,0.28)',
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-  },
-  addButtonText: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginTop: -1,
-  },
-  desktopAddButtonText: {
-    fontSize: 23,
-  },
-  value: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    flexShrink: 1,
-  },
-  desktopValue: {
-    fontSize: 19,
-  },
-  streakValue: {
-    color: colors.streak,
   },
 });

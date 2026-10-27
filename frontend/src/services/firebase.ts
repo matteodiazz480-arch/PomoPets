@@ -4,11 +4,9 @@ import {
   doc,
   getDocs,
   getFirestore,
-  limit,
-  orderBy,
-  query,
-  setDoc,
+  onSnapshot,
   serverTimestamp,
+  setDoc,
 } from 'firebase/firestore';
 
 export const firebaseConfig = {
@@ -35,11 +33,12 @@ export type TournamentPlayer = {
   totalXp: number;
   minutesStudied: number;
   streak: number;
+  photoUrl?: string;
   updatedAt?: any;
 };
 
 /**
- * Publishes or updates the player's score to the global Firestore leaderboard
+ * Publishes or updates the player's score and profile photo to the global Firestore leaderboard
  */
 export async function syncPlayerScore(player: TournamentPlayer): Promise<boolean> {
   try {
@@ -50,10 +49,11 @@ export async function syncPlayerScore(player: TournamentPlayer): Promise<boolean
       {
         name: player.name || 'Estudiante PomoPet',
         petName: player.petName || 'Cornolín',
-        level: player.level || 1,
-        totalXp: player.totalXp || 0,
-        minutesStudied: player.minutesStudied || 0,
-        streak: player.streak || 0,
+        level: Number(player.level || 1),
+        totalXp: Number(player.totalXp || 0),
+        minutesStudied: Number(player.minutesStudied || 0),
+        streak: Number(player.streak || 0),
+        photoUrl: player.photoUrl || '',
         updatedAt: serverTimestamp(),
       },
       { merge: true }
@@ -66,17 +66,13 @@ export async function syncPlayerScore(player: TournamentPlayer): Promise<boolean
 }
 
 /**
- * Fetches the global tournament leaderboard ordered by XP or study hours
+ * Fetches the global tournament leaderboard of all real users in Firestore
  */
 export async function fetchLeaderboard(
-  criteria: 'xp' | 'hours' = 'xp',
-  maxResults: number = 50
+  criteria: 'xp' | 'hours' = 'xp'
 ): Promise<TournamentPlayer[]> {
   try {
-    const field = criteria === 'xp' ? 'totalXp' : 'minutesStudied';
-    const q = query(collection(db, 'leaderboard'), orderBy(field, 'desc'), limit(maxResults));
-    const snapshot = await getDocs(q);
-
+    const snapshot = await getDocs(collection(db, 'leaderboard'));
     const players: TournamentPlayer[] = [];
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
@@ -88,12 +84,61 @@ export async function fetchLeaderboard(
         totalXp: Number(data.totalXp ?? 0),
         minutesStudied: Number(data.minutesStudied ?? 0),
         streak: Number(data.streak ?? 0),
+        photoUrl: data.photoUrl || '',
       });
     });
+
+    players.sort((a, b) =>
+      criteria === 'xp' ? b.totalXp - a.totalXp : b.minutesStudied - a.minutesStudied
+    );
 
     return players;
   } catch (error) {
     console.warn('[Firebase] Could not fetch leaderboard:', error);
     return [];
+  }
+}
+
+/**
+ * Real-time listener for the tournament leaderboard
+ */
+export function subscribeToLeaderboard(
+  criteria: 'xp' | 'hours',
+  callback: (players: TournamentPlayer[]) => void
+): () => void {
+  try {
+    const colRef = collection(db, 'leaderboard');
+    const unsubscribe = onSnapshot(
+      colRef,
+      (snapshot) => {
+        const players: TournamentPlayer[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          players.push({
+            id: docSnap.id,
+            name: data.name ?? 'Estudiante',
+            petName: data.petName ?? 'Mascota',
+            level: Number(data.level ?? 1),
+            totalXp: Number(data.totalXp ?? 0),
+            minutesStudied: Number(data.minutesStudied ?? 0),
+            streak: Number(data.streak ?? 0),
+            photoUrl: data.photoUrl || '',
+          });
+        });
+
+        players.sort((a, b) =>
+          criteria === 'xp' ? b.totalXp - a.totalXp : b.minutesStudied - a.minutesStudied
+        );
+
+        callback(players);
+      },
+      (error) => {
+        console.warn('[Firebase] Leaderboard subscription error:', error);
+      }
+    );
+    return unsubscribe;
+  } catch (error) {
+    console.warn('[Firebase] Could not set up leaderboard subscription:', error);
+    return () => {};
   }
 }

@@ -3,106 +3,135 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
+  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
+import ProfileModal from '../components/ProfileModal';
 import { useGame } from '../context/GameContext';
-import { fetchLeaderboard, type TournamentPlayer } from '../services/firebase';
+import { fetchLeaderboard, subscribeToLeaderboard, type TournamentPlayer } from '../services/firebase';
 import { colors } from '../theme/colors';
 
 type Criteria = 'xp' | 'hours';
 
-// Friendly reference players to ensure a lively community feel if Firestore is newly created
-const MOCK_FALLBACK_PLAYERS: TournamentPlayer[] = [
-  { id: 'bot_1', name: 'Valen Estudiosa 🎓', petName: 'Cornolín', level: 6, totalXp: 3840, minutesStudied: 1240, streak: 9 },
-  { id: 'bot_2', name: 'Lucas_Dev 💻', petName: 'Rocky', level: 5, totalXp: 2950, minutesStudied: 980, streak: 7 },
-  { id: 'bot_3', name: 'Marta Pomodoro 🍅', petName: 'Pomi', level: 4, totalXp: 2180, minutesStudied: 720, streak: 5 },
-  { id: 'bot_4', name: 'Santi Focus ⚡', petName: 'Sparky', level: 4, totalXp: 1820, minutesStudied: 610, streak: 4 },
-  { id: 'bot_5', name: 'Clara Meditativa 🌸', petName: 'Flora', level: 3, totalXp: 1450, minutesStudied: 490, streak: 3 },
-  { id: 'bot_6', name: 'Nico Búho 🦉', petName: 'Noctis', level: 3, totalXp: 1100, minutesStudied: 360, streak: 3 },
-];
+function calculateDaysUntilSunday(): { days: number; hours: number } {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 is Sunday
+  const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
+  const diffMs = endOfDay.getTime() - now.getTime() + (daysUntilSunday > 0 ? (daysUntilSunday - 1) * 86400000 : 0);
+  const totalHours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  return { days, hours };
+}
+
+function PlayerAvatar({
+  photoUrl,
+  name,
+  size = 46,
+  borderColor = colors.primary,
+}: {
+  photoUrl?: string;
+  name: string;
+  size?: number;
+  borderColor?: string;
+}) {
+  const initial = (name || 'E').trim().charAt(0).toUpperCase();
+
+  return (
+    <View
+      style={[
+        styles.avatarContainer,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderColor,
+        },
+      ]}
+    >
+      {photoUrl ? (
+        <Image source={{ uri: photoUrl }} style={[styles.avatarImg, { borderRadius: size / 2 }]} />
+      ) : (
+        <View style={[styles.avatarLetterFallback, { borderRadius: size / 2 }]}>
+          <Text style={[styles.avatarLetter, { fontSize: size * 0.45 }]}>{initial}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function TournamentScreen() {
   const insets = useSafeAreaInsets();
   const width = useWindowDimensions().width;
   const desktop = width >= 900;
-  const { state, level, setPlayerName, syncScoreToCloud } = useGame();
+  const { state, level, syncScoreToCloud } = useGame();
 
   const [criteria, setCriteria] = useState<Criteria>('xp');
   const [players, setPlayers] = useState<TournamentPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [nameModalVisible, setNameModalVisible] = useState(false);
-  const [editNameText, setEditNameText] = useState(state.playerName || 'Estudiante');
-  const [syncSuccess, setSyncSuccess] = useState<boolean | null>(null);
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
 
-  const loadData = async (showLoading = true) => {
-    if (showLoading) setLoading(true);
-    try {
-      // 1. Sync current player's latest score
-      await syncScoreToCloud();
+  const timeLeft = calculateDaysUntilSunday();
 
-      // 2. Query Firestore global leaderboard
-      const cloudPlayers = await fetchLeaderboard(criteria, 50);
+  // Sync current user and listen to real-time updates from Firestore
+  useEffect(() => {
+    setLoading(true);
 
-      if (cloudPlayers.length > 0) {
-        setPlayers(cloudPlayers);
-        setSyncSuccess(true);
-      } else {
-        // In case Firestore is still empty / freshly created, include player with friendly peers
-        const currentMe: TournamentPlayer = {
-          id: state.playerId || 'me',
-          name: state.playerName || 'Tú',
+    // 1. Initial sync to ensure player is in Firestore
+    syncScoreToCloud().catch(() => {});
+
+    // 2. Real-time subscription to Firestore leaderboard
+    const unsubscribe = subscribeToLeaderboard(criteria, (realPlayers) => {
+      // Ensure current user is in the list even if offline or just created
+      const exists = realPlayers.some((p) => p.id === state.playerId);
+      let list = [...realPlayers];
+
+      if (!exists && state.playerId) {
+        list.push({
+          id: state.playerId,
+          name: state.playerName || 'Estudiante',
           petName: state.petName || 'Cornolín',
           level,
           totalXp: state.totalXp,
           minutesStudied: state.minutesStudiedTotal,
           streak: state.streak,
-        };
-        const combined = [currentMe, ...MOCK_FALLBACK_PLAYERS.filter((p) => p.id !== currentMe.id)];
-        combined.sort((a, b) =>
+          photoUrl: state.photoUrl || '',
+        });
+        list.sort((a, b) =>
           criteria === 'xp' ? b.totalXp - a.totalXp : b.minutesStudied - a.minutesStudied
         );
-        setPlayers(combined);
-        setSyncSuccess(true);
       }
-    } catch {
-      setSyncSuccess(false);
-    } finally {
+
+      setPlayers(list);
       setLoading(false);
       setRefreshing(false);
-    }
-  };
+    });
 
-  useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [criteria]);
+    return () => {
+      unsubscribe();
+    };
+  }, [criteria, state.playerId, state.playerName, state.photoUrl, state.totalXp, state.minutesStudiedTotal]);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setRefreshing(true);
-    loadData(false);
-  };
-
-  const handleSaveName = () => {
-    if (editNameText.trim()) {
-      setPlayerName(editNameText.trim());
-      setNameModalVisible(false);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      playSound('success');
-      // Reload so new name reflects immediately
-      setTimeout(() => loadData(false), 200);
+    await syncScoreToCloud();
+    const updated = await fetchLeaderboard(criteria);
+    if (updated.length > 0) {
+      setPlayers(updated);
     }
+    setRefreshing(false);
   };
 
   const formatHoursAndMinutes = (minutes: number) => {
@@ -113,8 +142,8 @@ export default function TournamentScreen() {
   };
 
   // Find user's position in ranking
-  const myIndex = players.findIndex((p) => p.id === state.playerId || p.name === state.playerName);
-  const myRank = myIndex !== -1 ? myIndex + 1 : '-';
+  const myIndex = players.findIndex((p) => p.id === state.playerId);
+  const myRank = myIndex !== -1 ? myIndex + 1 : 1;
 
   const top1 = players[0];
   const top2 = players[1];
@@ -130,31 +159,61 @@ export default function TournamentScreen() {
           { paddingTop: insets.top + 20, paddingBottom: desktop ? 40 : insets.bottom + 110 },
         ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Torneo Global</Text>
-            <Text style={styles.subtitle}>Compite estudiando y sube al podio de honor</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Torneo Semanal</Text>
+            <Text style={styles.subtitle}>Compite con estudiantes de todo el mundo</Text>
           </View>
           <TouchableOpacity
-            style={styles.refreshBtn}
-            activeOpacity={0.8}
+            style={styles.profileBtn}
+            activeOpacity={0.85}
             onPress={() => {
               playSound('tap');
-              onRefresh();
+              setProfileModalVisible(true);
             }}
           >
-            <Ionicons name="refresh" size={18} color={colors.primaryDark} />
+            <PlayerAvatar
+              photoUrl={state.photoUrl || undefined}
+              name={state.playerName}
+              size={38}
+              borderColor={colors.primary}
+            />
           </TouchableOpacity>
         </View>
 
-        {/* Cloud Status Badge */}
-        <View style={styles.cloudBadge}>
-          <View style={[styles.statusDot, { backgroundColor: syncSuccess === false ? '#EF4444' : '#10B981' }]} />
-          <Text style={styles.cloudBadgeText}>
-            {syncSuccess === false ? 'Modo sin conexión' : 'Conectado a Google Cloud Firestore'}
-          </Text>
+        {/* Weekly Countdown & Rewards Banner */}
+        <View style={styles.tournamentBannerCard}>
+          <View style={styles.bannerTopRow}>
+            <View style={styles.seasonBadge}>
+              <Ionicons name="flame" size={14} color="#D97706" />
+              <Text style={styles.seasonBadgeText}>Temporada Semanal</Text>
+            </View>
+            <View style={styles.timerPill}>
+              <Ionicons name="hourglass-outline" size={13} color="#92400E" />
+              <Text style={styles.timerPillText}>
+                {timeLeft.days > 0 ? `${timeLeft.days}d ${timeLeft.hours}h restantes` : `${timeLeft.hours}h restantes`}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.bannerPrizeTitle}>Recompensas para los Ganadores:</Text>
+          <View style={styles.prizesRow}>
+            <View style={styles.prizeItem}>
+              <Text style={styles.prizeMedal}>🥇</Text>
+              <Text style={styles.prizeText}>+500 Monedas</Text>
+            </View>
+            <View style={styles.prizeItem}>
+              <Text style={styles.prizeMedal}>🥈</Text>
+              <Text style={styles.prizeText}>+300 Monedas</Text>
+            </View>
+            <View style={styles.prizeItem}>
+              <Text style={styles.prizeMedal}>🥉</Text>
+              <Text style={styles.prizeText}>+150 Monedas</Text>
+            </View>
+          </View>
         </View>
 
         {/* Criteria Switcher Tabs */}
@@ -175,7 +234,7 @@ export default function TournamentScreen() {
               style={{ marginRight: 6 }}
             />
             <Text style={[styles.criteriaText, criteria === 'xp' && styles.criteriaTextActive]}>
-              Por EXP
+              Por Experiencia (EXP)
             </Text>
           </TouchableOpacity>
 
@@ -200,51 +259,61 @@ export default function TournamentScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Current User Floating Card */}
-        <View style={styles.myCard}>
+        {/* Current User Card */}
+        <TouchableOpacity
+          style={styles.myCard}
+          activeOpacity={0.9}
+          onPress={() => {
+            playSound('tap');
+            setProfileModalVisible(true);
+          }}
+        >
           <View style={styles.myRankCircle}>
             <Text style={styles.myRankText}>#{myRank}</Text>
           </View>
+          <PlayerAvatar
+            photoUrl={state.photoUrl || undefined}
+            name={state.playerName}
+            size={48}
+            borderColor={colors.primary}
+          />
           <View style={styles.myInfo}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={styles.myName} numberOfLines={1}>
                 {state.playerName || 'Estudiante'} (Tú)
               </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setEditNameText(state.playerName || 'Estudiante');
-                  setNameModalVisible(true);
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="pencil-sharp" size={14} color={colors.primary} />
-              </TouchableOpacity>
+              <Ionicons name="pencil-sharp" size={13} color={colors.primary} />
             </View>
-            <Text style={styles.mySub}>Mascota: {state.petName || 'Cornolín'} • Nv. {level}</Text>
+            <Text style={styles.mySub}>
+              Nv. {level} • 🔥 {state.streak}d racha
+            </Text>
           </View>
           <View style={styles.myScorePill}>
             <Text style={styles.myScoreValue}>
               {criteria === 'xp' ? `${state.totalXp} XP` : formatHoursAndMinutes(state.minutesStudiedTotal)}
             </Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Cargando clasificación de Google Firestore...</Text>
+            <Text style={styles.loadingText}>Cargando participantes del torneo...</Text>
           </View>
         ) : (
           <>
-            {/* Podium (Top 3) */}
+            {/* Cartoon Podium (Top 3) */}
             <View style={styles.podiumContainer}>
               {/* 2nd Place */}
               {top2 && (
                 <View style={[styles.podiumItem, styles.podiumSecond]}>
                   <Text style={styles.podiumMedal}>🥈</Text>
-                  <View style={[styles.podiumAvatarWrap, { borderColor: '#94A3B8' }]}>
-                    <Ionicons name="person" size={24} color="#64748B" />
-                  </View>
+                  <PlayerAvatar
+                    photoUrl={top2.photoUrl}
+                    name={top2.name}
+                    size={52}
+                    borderColor="#94A3B8"
+                  />
                   <Text style={styles.podiumName} numberOfLines={1}>{top2.name}</Text>
                   <Text style={styles.podiumScore}>
                     {criteria === 'xp' ? `${top2.totalXp} XP` : formatHoursAndMinutes(top2.minutesStudied)}
@@ -259,9 +328,12 @@ export default function TournamentScreen() {
               {top1 && (
                 <View style={[styles.podiumItem, styles.podiumFirst]}>
                   <Text style={styles.podiumCrown}>👑</Text>
-                  <View style={[styles.podiumAvatarWrap, { borderColor: '#F59E0B', width: 62, height: 62, borderRadius: 31 }]}>
-                    <Ionicons name="trophy" size={30} color="#D97706" />
-                  </View>
+                  <PlayerAvatar
+                    photoUrl={top1.photoUrl}
+                    name={top1.name}
+                    size={64}
+                    borderColor="#F59E0B"
+                  />
                   <Text style={[styles.podiumName, styles.podiumNameFirst]} numberOfLines={1}>
                     {top1.name}
                   </Text>
@@ -278,9 +350,12 @@ export default function TournamentScreen() {
               {top3 && (
                 <View style={[styles.podiumItem, styles.podiumThird]}>
                   <Text style={styles.podiumMedal}>🥉</Text>
-                  <View style={[styles.podiumAvatarWrap, { borderColor: '#CD7F32' }]}>
-                    <Ionicons name="person" size={24} color="#B45309" />
-                  </View>
+                  <PlayerAvatar
+                    photoUrl={top3.photoUrl}
+                    name={top3.name}
+                    size={52}
+                    borderColor="#CD7F32"
+                  />
                   <Text style={styles.podiumName} numberOfLines={1}>{top3.name}</Text>
                   <Text style={styles.podiumScore}>
                     {criteria === 'xp' ? `${top3.totalXp} XP` : formatHoursAndMinutes(top3.minutesStudied)}
@@ -292,72 +367,70 @@ export default function TournamentScreen() {
               )}
             </View>
 
-            {/* Rest of Leaderboard */}
-            <View style={styles.list}>
-              {restPlayers.map((player, idx) => {
-                const rank = idx + 4;
-                const isMe = player.id === state.playerId || player.name === state.playerName;
-                return (
-                  <View key={player.id + '_' + rank} style={[styles.row, isMe && styles.rowHighlight]}>
-                    <Text style={[styles.rankNumber, isMe && styles.rankNumberMe]}>{rank}</Text>
-                    <View style={styles.rowInfo}>
-                      <Text style={[styles.rowName, isMe && styles.rowNameMe]} numberOfLines={1}>
-                        {player.name} {isMe ? '(Tú)' : ''}
-                      </Text>
-                      <View style={styles.rowMeta}>
-                        <View style={styles.levelPill}>
-                          <Text style={styles.levelPillText}>Nv. {player.level}</Text>
+            {/* Rest of Real Players List */}
+            {restPlayers.length > 0 && (
+              <View style={styles.list}>
+                {restPlayers.map((player, idx) => {
+                  const rank = idx + 4;
+                  const isMe = player.id === state.playerId;
+                  return (
+                    <View key={player.id} style={[styles.row, isMe && styles.rowHighlight]}>
+                      <Text style={[styles.rankNumber, isMe && styles.rankNumberMe]}>{rank}</Text>
+                      <PlayerAvatar
+                        photoUrl={player.photoUrl}
+                        name={player.name}
+                        size={38}
+                        borderColor={isMe ? colors.primary : colors.border}
+                      />
+                      <View style={styles.rowInfo}>
+                        <Text style={[styles.rowName, isMe && styles.rowNameMe]} numberOfLines={1}>
+                          {player.name} {isMe ? '(Tú)' : ''}
+                        </Text>
+                        <View style={styles.rowMeta}>
+                          <View style={styles.levelPill}>
+                            <Text style={styles.levelPillText}>Nv. {player.level}</Text>
+                          </View>
+                          {player.streak > 0 && (
+                            <Text style={styles.streakText}>🔥 {player.streak}d</Text>
+                          )}
                         </View>
-                        {player.streak > 0 && (
-                          <Text style={styles.streakText}>🔥 {player.streak}d</Text>
-                        )}
+                      </View>
+                      <View style={styles.rowScoreWrap}>
+                        <Text style={[styles.rowScore, isMe && styles.rowScoreMe]}>
+                          {criteria === 'xp'
+                            ? `${player.totalXp} XP`
+                            : formatHoursAndMinutes(player.minutesStudied)}
+                        </Text>
+                        <Text style={styles.rowScoreSub}>
+                          {criteria === 'xp'
+                            ? formatHoursAndMinutes(player.minutesStudied)
+                            : `${player.totalXp} XP`}
+                        </Text>
                       </View>
                     </View>
-                    <Text style={[styles.rowScore, isMe && styles.rowScoreMe]}>
-                      {criteria === 'xp'
-                        ? `${player.totalXp} XP`
-                        : formatHoursAndMinutes(player.minutesStudied)}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {players.length === 1 && (
+              <View style={styles.singlePlayerCard}>
+                <Ionicons name="sparkles" size={28} color="#D97706" style={{ marginBottom: 6 }} />
+                <Text style={styles.singlePlayerTitle}>¡Vas en el puesto #1!</Text>
+                <Text style={styles.singlePlayerDesc}>
+                  Completa tus sesiones de estudio y anima a tus compañeros a unirse para verlos aquí.
+                </Text>
+              </View>
+            )}
           </>
         )}
       </ScrollView>
 
-      {/* Edit Nickname Modal */}
-      <Modal visible={nameModalVisible} transparent animationType="fade" onRequestClose={() => setNameModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Editar Nombre de Jugador</Text>
-            <Text style={styles.modalSub}>Este nombre aparecerá en la tabla del torneo oficial:</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={editNameText}
-              onChangeText={setEditNameText}
-              maxLength={24}
-              placeholder="Ej: Sofía Estudiosa"
-              placeholderTextColor="#94A3B8"
-              autoFocus
-            />
-            <View style={styles.modalBtns}>
-              <TouchableOpacity
-                style={styles.modalBtnCancel}
-                onPress={() => setNameModalVisible(false)}
-              >
-                <Text style={styles.modalBtnCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalBtnSave}
-                onPress={handleSaveName}
-              >
-                <Text style={styles.modalBtnSaveText}>Guardar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Profile & Photo Modal */}
+      <ProfileModal
+        visible={profileModalVisible}
+        onClose={() => setProfileModalVisible(false)}
+      />
     </View>
   );
 }
@@ -374,65 +447,132 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   desktopScroll: {
-    maxWidth: 900,
-    paddingHorizontal: 40,
+    maxWidth: 860,
+    paddingHorizontal: 36,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 14,
   },
   title: {
+    fontFamily: 'Nunito_800ExtraBold',
     fontSize: 28,
-    fontWeight: '800',
     color: colors.textPrimary,
   },
   subtitle: {
+    fontFamily: 'Nunito_600SemiBold',
     color: colors.textSecondary,
     fontSize: 13,
-    fontWeight: '500',
     marginTop: 2,
   },
-  refreshBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.card,
+  profileBtn: {
+    padding: 3,
+  },
+  avatarContainer: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    overflow: 'hidden',
   },
-  cloudBadge: {
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarLetterFallback: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarLetter: {
+    fontFamily: 'Nunito_800ExtraBold',
+    color: '#92400E',
+  },
+  tournamentBannerCard: {
+    backgroundColor: '#FFFDF5',
+    borderRadius: 22,
+    padding: 14,
+    borderWidth: 2,
+    borderColor: '#FDE68A',
+    marginBottom: 16,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  bannerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  seasonBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.09)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 6,
-    marginBottom: 14,
-    gap: 6,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 4,
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  cloudBadgeText: {
+  seasonBadgeText: {
+    fontFamily: 'Nunito_800ExtraBold',
     fontSize: 11,
-    fontWeight: '700',
-    color: '#065F46',
+    color: '#92400E',
+  },
+  timerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timerPillText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: '#92400E',
+  },
+  bannerPrizeTitle: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 12,
+    color: colors.textPrimary,
+    marginBottom: 6,
+  },
+  prizesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  prizeItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 5,
+  },
+  prizeMedal: {
+    fontSize: 14,
+  },
+  prizeText: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 11,
+    color: colors.textPrimary,
   },
   criteriaWrap: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 4,
     marginBottom: 16,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: colors.border,
   },
   criteriaTab: {
@@ -441,26 +581,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 14,
   },
   criteriaTabActive: {
     backgroundColor: colors.primary,
   },
   criteriaText: {
+    fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    fontWeight: '700',
     color: colors.textSecondary,
   },
   criteriaTextActive: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontFamily: 'Nunito_800ExtraBold',
   },
   myCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFBEB',
-    borderRadius: 20,
-    padding: 14,
+    borderRadius: 22,
+    padding: 12,
     borderWidth: 2,
     borderColor: '#FDE68A',
     marginBottom: 20,
@@ -472,16 +612,16 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   myRankCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   myRankText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 16,
+    fontSize: 15,
     color: '#FFFFFF',
   },
   myInfo: {
@@ -513,9 +653,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 22,
     gap: 8,
-    paddingTop: 16,
+    paddingTop: 10,
   },
   podiumItem: {
     alignItems: 'center',
@@ -532,21 +672,11 @@ const styles = StyleSheet.create({
   },
   podiumCrown: {
     fontSize: 22,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   podiumMedal: {
     fontSize: 20,
-    marginBottom: 2,
-  },
-  podiumAvatarWrap: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2.5,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   podiumName: {
     fontFamily: 'Nunito_800ExtraBold',
@@ -554,6 +684,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     textAlign: 'center',
     maxWidth: 90,
+    marginTop: 6,
   },
   podiumNameFirst: {
     fontSize: 13,
@@ -574,25 +705,25 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   podiumBarFirst: {
-    height: 94,
+    height: 98,
     backgroundColor: '#FDE68A',
     borderWidth: 2,
     borderColor: '#F59E0B',
     borderBottomWidth: 0,
   },
   podiumBarSecond: {
-    height: 70,
+    height: 74,
     backgroundColor: '#E2E8F0',
     borderWidth: 2,
     borderColor: '#94A3B8',
     borderBottomWidth: 0,
   },
   podiumBarThird: {
-    height: 52,
+    height: 54,
     backgroundColor: '#FFEDD5',
     borderWidth: 2,
     borderColor: '#FB923C',
@@ -619,11 +750,11 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
-    gap: 12,
+    gap: 10,
   },
   rowHighlight: {
     backgroundColor: '#FEF3C7',
@@ -632,7 +763,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 14,
     color: colors.textSecondary,
-    width: 24,
+    width: 22,
     textAlign: 'center',
   },
   rankNumberMe: {
@@ -672,6 +803,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textSecondary,
   },
+  rowScoreWrap: {
+    alignItems: 'flex-end',
+  },
   rowScore: {
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 13,
@@ -679,6 +813,12 @@ const styles = StyleSheet.create({
   },
   rowScoreMe: {
     color: '#B45309',
+  },
+  rowScoreSub: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 10,
+    color: colors.textSecondary,
+    marginTop: 1,
   },
   loadingBox: {
     paddingVertical: 40,
@@ -688,71 +828,29 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 13,
     color: colors.textSecondary,
+    fontFamily: 'Nunito_600SemiBold',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
+  singlePlayerCard: {
+    backgroundColor: '#FFFDF5',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
     alignItems: 'center',
-    padding: 24,
+    marginTop: 14,
+    textAlign: 'center',
   },
-  modalCard: {
-    width: '100%',
-    maxWidth: 380,
-    backgroundColor: colors.card,
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: colors.border,
-  },
-  modalTitle: {
+  singlePlayerTitle: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 18,
-    color: colors.textPrimary,
-    marginBottom: 4,
+    fontSize: 15,
+    color: '#B45309',
   },
-  modalSub: {
+  singlePlayerDesc: {
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 12,
     color: colors.textSecondary,
-    marginBottom: 14,
-  },
-  modalInput: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
-    color: colors.textPrimary,
-    marginBottom: 16,
-  },
-  modalBtns: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
-  },
-  modalBtnCancel: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  modalBtnCancelText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  modalBtnSave: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  modalBtnSaveText: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 13,
-    color: '#FFFFFF',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 16,
   },
 });

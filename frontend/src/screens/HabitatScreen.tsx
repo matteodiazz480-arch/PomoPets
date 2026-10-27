@@ -8,6 +8,7 @@ import CoinStoreModal from '../components/CoinStoreModal';
 import HabitatBackground from '../components/HabitatBackground';
 import PetAvatar from '../components/PetAvatar';
 import PrimaryButton from '../components/PrimaryButton';
+import ProfileModal from '../components/ProfileModal';
 import RenameModal from '../components/RenameModal';
 import RewardModal from '../components/RewardModal';
 import SpeechBubble from '../components/SpeechBubble';
@@ -126,6 +127,7 @@ export default function HabitatScreen({ navigation }: any) {
     toggleTask,
     deleteTask,
   } = useGame();
+  const [profileVisible, setProfileVisible] = useState(false);
   const [coinStoreVisible, setCoinStoreVisible] = useState(false);
   const [renameVisible, setRenameVisible] = useState(false);
   const [phraseTick, setPhraseTick] = useState(0);
@@ -158,10 +160,10 @@ export default function HabitatScreen({ navigation }: any) {
   return (
     <HabitatBackground transparentDesktop={desktop}>
       <TopBar
-        coins={state.coins}
-        streak={state.streak}
-        onAddCoins={() => setCoinStoreVisible(true)}
-        onOpenTournament={() => navigation?.navigate('Torneo')}
+        playerName={state.playerName}
+        photoUrl={state.photoUrl}
+        level={level}
+        onOpenProfile={() => setProfileVisible(true)}
         desktop={desktop}
       />
 
@@ -292,6 +294,7 @@ export default function HabitatScreen({ navigation }: any) {
         coins={lastReward?.coins ?? 0}
         onClose={clearLastReward}
       />
+      <ProfileModal visible={profileVisible} onClose={() => setProfileVisible(false)} />
       <CoinStoreModal visible={coinStoreVisible} onClose={() => setCoinStoreVisible(false)} />
       <RenameModal
         visible={renameVisible}
