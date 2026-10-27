@@ -313,6 +313,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (parsed.playerName && parsed.playerName.startsWith('Estudiante')) {
             parsed.playerName = '';
           }
+          if (parsed.photoUrl && parsed.photoUrl.length > 80000) {
+            parsed.photoUrl = null;
+          }
           parsed.ownedAccessories = Array.from(new Set([...(parsed.ownedAccessories ?? []), ...ALL_ACCESSORY_IDS]));
           setState(parsed);
           resyncTimer(parsed);
@@ -639,19 +642,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const setPlayerName = useCallback((name: string) => {
     const trimmed = name.trim().slice(0, 24);
     if (!trimmed) return;
-    setState((prev) => {
-      const next = { ...prev, playerName: trimmed };
-      syncPlayerScore(buildPlayerPayload(next, { name: trimmed })).catch(() => {});
-      return next;
-    });
+    setState((prev) => ({ ...prev, playerName: trimmed }));
   }, []);
 
   const setPhotoUrl = useCallback((url: string | null) => {
-    setState((prev) => {
-      const next = { ...prev, photoUrl: url };
-      syncPlayerScore(buildPlayerPayload(next, { photoUrl: url || '' })).catch(() => {});
-      return next;
-    });
+    setState((prev) => ({ ...prev, photoUrl: url }));
   }, []);
 
   const syncScoreToCloud = useCallback(async () => {

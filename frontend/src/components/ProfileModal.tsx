@@ -22,32 +22,45 @@ type Props = {
   onClose: () => void;
 };
 
-async function convertAssetToDataUri(asset: ImagePicker.ImagePickerAsset): Promise<string> {
+async function compressAssetToTinyDataUri(asset: ImagePicker.ImagePickerAsset): Promise<string> {
+  if (typeof document !== 'undefined') {
+    const src =
+      asset.uri ||
+      (asset.base64
+        ? asset.base64.startsWith('data:')
+          ? asset.base64
+          : `data:image/jpeg;base64,${asset.base64}`
+        : '');
+
+    if (src) {
+      return new Promise((resolve) => {
+        const img = new (window as any).Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const targetSize = 96;
+          const canvas = document.createElement('canvas');
+          canvas.width = targetSize;
+          canvas.height = targetSize;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            const minSide = Math.min(img.width || targetSize, img.height || targetSize);
+            const sx = ((img.width || targetSize) - minSide) / 2;
+            const sy = ((img.height || targetSize) - minSide) / 2;
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, targetSize, targetSize);
+            resolve(canvas.toDataURL('image/jpeg', 0.55));
+          } else {
+            resolve(src);
+          }
+        };
+        img.onerror = () => resolve(src);
+        img.src = src;
+      });
+    }
+  }
+
   if (asset.base64) {
     const raw = asset.base64;
     return raw.startsWith('data:') ? raw : `data:image/jpeg;base64,${raw}`;
-  }
-
-  if (typeof document !== 'undefined') {
-    return new Promise((resolve) => {
-      const img = new (window as any).Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxDim = 120;
-        canvas.width = maxDim;
-        canvas.height = maxDim;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, maxDim, maxDim);
-          resolve(canvas.toDataURL('image/jpeg', 0.7));
-        } else {
-          resolve(asset.uri);
-        }
-      };
-      img.onerror = () => resolve(asset.uri);
-      img.src = asset.uri;
-    });
   }
 
   try {
@@ -69,7 +82,6 @@ export default function ProfileModal({ visible, onClose }: Props) {
   const [name, setName] = useState(state.playerName || '');
   const [photoPreview, setPhotoPreview] = useState<string | null>(state.photoUrl || null);
   const [loadingImage, setLoadingImage] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -78,8 +90,8 @@ export default function ProfileModal({ visible, onClose }: Props) {
     }
   }, [visible, state.playerName, state.photoUrl]);
 
-  const publishProfile = async (nextName: string, nextPhoto: string) => {
-    await syncPlayerScore({
+  const publishProfileInBackground = (nextName: string, nextPhoto: string) => {
+    syncPlayerScore({
       id: state.playerId || 'player_default',
       name: nextName,
       petName: state.petName || 'Cornolín',
@@ -88,7 +100,7 @@ export default function ProfileModal({ visible, onClose }: Props) {
       minutesStudied: state.minutesStudiedTotal,
       streak: state.streak,
       photoUrl: nextPhoto,
-    });
+    }).catch(() => {});
   };
 
   const handlePickImage = async () => {
@@ -107,15 +119,15 @@ export default function ProfileModal({ visible, onClose }: Props) {
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.4,
+        quality: 0.12,
         base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
-        const dataUri = await convertAssetToDataUri(result.assets[0]);
+        const dataUri = await compressAssetToTinyDataUri(result.assets[0]);
         setPhotoPreview(dataUri);
         setPhotoUrl(dataUri);
-        await publishProfile(name.trim() || state.playerName || 'Jugador', dataUri);
+        publishProfileInBackground(name.trim() || state.playerName || 'Jugador', dataUri);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         playSound('success');
       }
@@ -124,22 +136,21 @@ export default function ProfileModal({ visible, onClose }: Props) {
     }
   };
 
-  const handleRemovePhoto = async () => {
+  const handleRemovePhoto = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     playSound('tap');
     setPhotoPreview(null);
     setPhotoUrl(null);
-    await publishProfile(name.trim() || state.playerName || 'Jugador', '');
+    publishProfileInBackground(name.trim() || state.playerName || 'Jugador', '');
   };
 
-  const handleSave = async () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
+  const handleSave = () => {
+    const trimmed = name.trim() || state.playerName || 'Jugador';
+    const activePhoto = photoPreview ?? '';
 
-    setSaving(true);
     setPlayerName(trimmed);
-    await publishProfile(trimmed, photoPreview || state.photoUrl || '');
-    setSaving(false);
+    setPhotoUrl(photoPreview);
+    publishProfileInBackground(trimmed, activePhoto);
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     playSound('success');
@@ -220,14 +231,11 @@ export default function ProfileModal({ visible, onClose }: Props) {
         </View>
 
         <TouchableOpacity
-          style={[profileModalStyles.saveBtn, saving && { opacity: 0.7 }]}
+          style={profileModalStyles.saveBtn}
           activeOpacity={0.88}
           onPress={handleSave}
-          disabled={saving}
         >
-          <Text style={profileModalStyles.saveBtnText}>
-            {saving ? 'Guardando...' : 'Guardar Cambios'}
-          </Text>
+          <Text style={profileModalStyles.saveBtnText}>Guardar Cambios</Text>
         </TouchableOpacity>
       </View>
     </BlurredModal>
