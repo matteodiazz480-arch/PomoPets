@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { Animated, Text, View } from 'react-native';
+import { speechBubbleStyles } from '../style';
 
 type Props = {
   text: string;
@@ -19,71 +19,12 @@ export default function SpeechBubble({ text, large = false }: Props) {
   const opacity = pop;
 
   return (
-    <Animated.View style={[styles.wrap, large && styles.largeWrap, { opacity, transform: [{ scale }] }]}>
-      <View style={[styles.bubble, large && styles.largeBubble]}>
-        <Text style={[styles.text, large && styles.largeText]}>{text}</Text>
+    <Animated.View style={[speechBubbleStyles.wrap, large && speechBubbleStyles.largeWrap, { opacity, transform: [{ scale }] }]}>
+      <View style={[speechBubbleStyles.bubble, large && speechBubbleStyles.largeBubble]}>
+        <Text style={[speechBubbleStyles.text, large && speechBubbleStyles.largeText]}>{text}</Text>
       </View>
-      <View style={styles.tailShadow} />
-      <View style={styles.tail} />
+      <View style={speechBubbleStyles.tailShadow} />
+      <View style={speechBubbleStyles.tail} />
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    maxWidth: 280,
-  },
-  bubble: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: colors.border,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  text: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  largeWrap: {
-    maxWidth: 360,
-  },
-  largeBubble: {
-    borderRadius: 24,
-    paddingVertical: 14,
-    paddingHorizontal: 22,
-  },
-  largeText: {
-    fontSize: 16,
-  },
-  tailShadow: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderTopWidth: 12,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: colors.border,
-    marginTop: -2,
-  },
-  tail: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderTopWidth: 10,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: colors.card,
-    marginTop: -11,
-  },
-});

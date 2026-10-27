@@ -1,6 +1,5 @@
 import { Platform } from 'react-native';
 
-// Injects Google Font Nunito globally for Web
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   const linkId = 'google-font-nunito';
   if (!document.getElementById(linkId)) {
@@ -16,7 +15,6 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       body, button, input, textarea, select {
         font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       }
-      /* Prevent overriding vector icon fonts */
       [style*="Ionicons"],
       [style*="ionicons"],
       [style*="font-family: Ionicons"],

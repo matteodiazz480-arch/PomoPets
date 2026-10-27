@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Animated, ScrollView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
 import CoinStoreModal from '../components/CoinStoreModal';
@@ -19,13 +19,9 @@ import XPBar from '../components/XPBar';
 import { useGame } from '../context/GameContext';
 import { getPetPhrase } from '../data/petPhrases';
 import { getStageForLevel } from '../data/pets';
-import { colors } from '../theme/colors';
+import { colors, habitatScreenStyles } from '../style';
 
-// How often the pet's line refreshes on its own (it also refreshes whenever
-// phase/streak change) — keeps it feeling alive without flickering text.
 const PHRASE_REFRESH_MS = 5 * 60 * 1000;
-// Buckets focus-session progress into 5-minute steps so the phrase doesn't
-// recompute (and reroll its random pick) on every single countdown tick.
 const FOCUS_BUCKET_MINUTES = 5;
 
 function formatTime(totalSeconds: number): string {
@@ -76,17 +72,17 @@ function DurationButton({
     >
       <Animated.View
         style={[
-          styles.durationOption,
-          desktop && styles.desktopDurationOption,
-          active && styles.durationOptionActive,
+          habitatScreenStyles.durationOption,
+          desktop && habitatScreenStyles.desktopDurationOption,
+          active && habitatScreenStyles.durationOptionActive,
           { transform: [{ scale }] },
         ]}
       >
         <Text
           style={[
-            styles.durationLabel,
-            desktop && styles.desktopDurationLabel,
-            active && styles.durationLabelActive,
+            habitatScreenStyles.durationLabel,
+            desktop && habitatScreenStyles.desktopDurationLabel,
+            active && habitatScreenStyles.durationLabelActive,
           ]}
         >
           {minutes} min
@@ -96,13 +92,15 @@ function DurationButton({
   );
 }
 
-export default function HabitatScreen({ navigation }: any) {
+export default function HabitatScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const desktop = width >= 900;
   const timerSize = desktop
     ? Math.min(width >= 1050 ? 280 : 220, height * 0.31)
-    : height <= 750 ? 150 : 168;
+    : height <= 750
+      ? 150
+      : 168;
   const largeControls = width >= 1100;
   const petSize = desktop
     ? Math.min(420, height * 0.48, (width - 356) * 0.42)
@@ -153,7 +151,6 @@ export default function HabitatScreen({ navigation }: any) {
         phase,
         elapsedFocusMinutes: focusBucket * FOCUS_BUCKET_MINUTES,
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [phraseTick, state.streak, phase, focusBucket]
   );
 
@@ -172,8 +169,8 @@ export default function HabitatScreen({ navigation }: any) {
 
       <ScrollView
         contentContainerStyle={[
-          styles.scroll,
-          desktop && styles.desktopScroll,
+          habitatScreenStyles.scroll,
+          desktop && habitatScreenStyles.desktopScroll,
           {
             paddingTop: insets.top + (desktop ? 70 : 64),
             paddingBottom: desktop ? 40 : insets.bottom + 110,
@@ -182,35 +179,37 @@ export default function HabitatScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         {desktop && (
-          <View style={styles.desktopHeading}>
-            <Text style={styles.desktopEyebrow}>TU ESPACIO DE ENFOQUE</Text>
-            <Text style={styles.desktopTitle}>Un paso a la vez</Text>
+          <View style={habitatScreenStyles.desktopHeading}>
+            <Text style={habitatScreenStyles.desktopEyebrow}>TU ESPACIO DE ENFOQUE</Text>
+            <Text style={habitatScreenStyles.desktopTitle}>Un paso a la vez</Text>
           </View>
         )}
-        <View style={[styles.dashboard, desktop && styles.desktopDashboard]}>
-          <View style={[styles.petSection, desktop && styles.desktopPetSection]}>
-            <View style={styles.bubbleWrap}>
+        <View style={[habitatScreenStyles.dashboard, desktop && habitatScreenStyles.desktopDashboard]}>
+          <View style={[habitatScreenStyles.petSection, desktop && habitatScreenStyles.desktopPetSection]}>
+            <View style={habitatScreenStyles.bubbleWrap}>
               <SpeechBubble text={phrase} large={desktop} />
             </View>
-            <View style={[styles.petCharacter, desktop && styles.desktopPetCharacter]}>
+            <View style={[habitatScreenStyles.petCharacter, desktop && habitatScreenStyles.desktopPetCharacter]}>
               <TouchableOpacity
-                style={styles.petNameRow}
+                style={habitatScreenStyles.petNameRow}
                 activeOpacity={0.7}
                 onPress={() => setRenameVisible(true)}
               >
-                <Text style={[styles.petName, desktop && styles.desktopPetName]}>{displayName}</Text>
-                <Ionicons name="pencil" size={14} color={colors.textSecondary} style={styles.petNameIcon} />
+                <Text style={[habitatScreenStyles.petName, desktop && habitatScreenStyles.desktopPetName]}>
+                  {displayName}
+                </Text>
+                <Ionicons name="pencil" size={14} color={colors.textSecondary} style={habitatScreenStyles.petNameIcon} />
               </TouchableOpacity>
               <PetAvatar eyesOpen={stage.eyesOpen} eyesClosed={stage.eyesClosed} size={petSize} />
             </View>
-            <View style={styles.xpBarWrap}>
+            <View style={habitatScreenStyles.xpBarWrap}>
               <XPBar level={level} xpIntoLevel={xpIntoLevel} xpToNext={xpToNext} large={desktop} />
             </View>
           </View>
 
-          <View style={[styles.focusColumn, desktop && styles.desktopFocusColumn]}>
-            <View style={[styles.card, desktop && styles.desktopCard]}>
-              <Text style={[styles.phaseLabel, desktop && styles.desktopPhaseLabel]}>
+          <View style={[habitatScreenStyles.focusColumn, desktop && habitatScreenStyles.desktopFocusColumn]}>
+            <View style={[habitatScreenStyles.card, desktop && habitatScreenStyles.desktopCard]}>
+              <Text style={[habitatScreenStyles.phaseLabel, desktop && habitatScreenStyles.desktopPhaseLabel]}>
                 {phase === 'idle' && 'Listo para estudiar'}
                 {phase === 'focus' && 'Enfoque en curso'}
                 {phase === 'break' && 'Tiempo de Descanso'}
@@ -224,7 +223,7 @@ export default function HabitatScreen({ navigation }: any) {
               />
 
               {phase === 'idle' && (
-                <View style={styles.durationsRow}>
+                <View style={habitatScreenStyles.durationsRow}>
                   {DURATIONS.map((d) => (
                     <DurationButton
                       key={d}
@@ -241,7 +240,7 @@ export default function HabitatScreen({ navigation }: any) {
                 </View>
               )}
 
-              <View style={[styles.controlsRow, desktop && styles.desktopControlsRow]}>
+              <View style={[habitatScreenStyles.controlsRow, desktop && habitatScreenStyles.desktopControlsRow]}>
                 {phase === 'idle' && (
                   <PrimaryButton
                     label="Iniciar Pomodoro"
@@ -268,7 +267,7 @@ export default function HabitatScreen({ navigation }: any) {
                   />
                 )}
                 {phase !== 'idle' && (
-                  <View style={styles.resetWrap}>
+                  <View style={habitatScreenStyles.resetWrap}>
                     <PrimaryButton
                       label="Reiniciar"
                       iconName="refresh"
@@ -308,181 +307,3 @@ export default function HabitatScreen({ navigation }: any) {
     </HabitatBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  scroll: {
-    width: '100%',
-    maxWidth: 600,
-    alignSelf: 'center',
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  desktopScroll: {
-    maxWidth: 1480,
-    paddingHorizontal: 48,
-    alignItems: 'stretch',
-  },
-  desktopHeading: {
-    marginBottom: 14,
-  },
-  desktopEyebrow: {
-    color: colors.secondaryDark,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-  },
-  desktopTitle: {
-    color: colors.textPrimary,
-    fontSize: 28,
-    fontWeight: '800',
-    marginTop: 5,
-  },
-  dashboard: {
-    width: '100%',
-  },
-  desktopDashboard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 44,
-  },
-  petSection: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  desktopPetSection: {
-    flex: 1,
-    minWidth: 0,
-    paddingVertical: 12,
-  },
-  focusColumn: {
-    width: '100%',
-  },
-  desktopFocusColumn: {
-    flex: 1,
-    minWidth: 0,
-  },
-  bubbleWrap: {
-    marginBottom: 8,
-    alignItems: 'center',
-  },
-  petCharacter: {
-    alignItems: 'center',
-  },
-  desktopPetCharacter: {},
-  petNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  petName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  desktopPetName: {
-    fontSize: 28,
-  },
-  petNameIcon: {
-    marginLeft: 6,
-    marginTop: 2,
-  },
-  xpBarWrap: {
-    width: '100%',
-    maxWidth: 290,
-    marginTop: 8,
-  },
-  card: {
-    width: '100%',
-    backgroundColor: colors.card,
-    borderRadius: 26,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderBottomWidth: 5,
-    borderBottomColor: '#E6D5BF',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  desktopCard: {
-    paddingVertical: 20,
-    paddingHorizontal: 34,
-    borderRadius: 30,
-  },
-  desktopPhaseLabel: {
-    fontSize: 17,
-  },
-  phaseLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  durationsRow: {
-    flexDirection: 'row',
-    width: '100%',
-    gap: 6,
-    marginTop: 14,
-    padding: 4,
-    borderRadius: 16,
-    backgroundColor: colors.cardAlt,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  durationOption: {
-    flex: 1,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-  },
-  desktopDurationOption: {
-    minHeight: 48,
-  },
-  durationOptionActive: {
-    backgroundColor: colors.primary,
-    borderWidth: 2,
-    borderColor: colors.primaryDark,
-    borderBottomWidth: 4,
-    borderBottomColor: colors.primaryDeep,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  durationLabel: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  durationLabelActive: {
-    color: colors.white,
-    fontWeight: '800',
-  },
-  controlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 14,
-    gap: 10,
-    width: '100%',
-  },
-  desktopControlsRow: {
-    width: '100%',
-    justifyContent: 'center',
-    minHeight: 58,
-  },
-  desktopDurationLabel: {
-    fontSize: 15,
-  },
-  resetWrap: {
-    marginLeft: 4,
-  },
-});

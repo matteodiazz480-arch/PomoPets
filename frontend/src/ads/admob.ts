@@ -11,18 +11,13 @@ let rewardedAd: RewardedAd | null = null;
 let isAdLoaded = false;
 let isInitializing = false;
 
-/**
- * Inicializa el SDK oficial de Google Mobile Ads y precarga el anuncio bonificado (Rewarded).
- */
 export async function initAdMob(): Promise<void> {
   if (isInitializing) return;
   isInitializing = true;
   try {
     await mobileAds().initialize();
     loadRewardedAd();
-  } catch {
-    // En caso de ejecutarse en entorno sin módulo nativo compilado (ej. Expo Go)
-  } finally {
+  } catch {} finally {
     isInitializing = false;
   }
 }
@@ -44,7 +39,6 @@ export function loadRewardedAd(onLoadedChange?: (loaded: boolean) => void): () =
     const unsubClosed = ad.addAdEventListener(AdEventType.CLOSED, () => {
       isAdLoaded = false;
       onLoadedChange?.(false);
-      // Precargar el siguiente anuncio automáticamente
       ad.load();
     });
 
@@ -66,10 +60,6 @@ export function loadRewardedAd(onLoadedChange?: (loaded: boolean) => void): () =
   }
 }
 
-/**
- * Muestra el anuncio de vídeo recompensado de AdMob si está listo.
- * Devuelve true si se mostró el anuncio nativo de AdMob, o false si se debe usar el fallback.
- */
 export async function showRewardedAd(onRewardEarned: (amount: number, type: string) => void): Promise<boolean> {
   if (!rewardedAd || !isAdLoaded) {
     return false;

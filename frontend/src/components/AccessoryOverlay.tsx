@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Polygon, Rect, Stop } from 'react-native-svg';
 import type { AccessoryCategory, AccessoryId } from '../data/accessories';
+import { accessoryOverlayStyles } from '../style';
 
 type Props = {
   equipped: Partial<Record<AccessoryCategory, AccessoryId>>;
@@ -11,33 +12,28 @@ type Props = {
 function AccessoryDefs() {
   return (
     <Defs>
-      {/* Gold gradient for crown */}
       <LinearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
         <Stop offset="0%" stopColor="#FFF2A3" />
         <Stop offset="50%" stopColor="#FFD23F" />
         <Stop offset="100%" stopColor="#E09F00" />
       </LinearGradient>
 
-      {/* Red gradient for cap and bowtie */}
       <LinearGradient id="redGrad" x1="0" y1="0" x2="0" y2="1">
         <Stop offset="0%" stopColor="#FF6B6B" />
         <Stop offset="100%" stopColor="#D93838" />
       </LinearGradient>
 
-      {/* Scarf warm orange/coral gradient */}
       <LinearGradient id="scarfGrad" x1="0" y1="0" x2="1" y2="1">
         <Stop offset="0%" stopColor="#FF9F5A" />
         <Stop offset="100%" stopColor="#E06D2B" />
       </LinearGradient>
 
-      {/* Crystal clear glass lens reflection */}
       <LinearGradient id="glassReflectionGrad" x1="0" y1="0" x2="1" y2="1">
         <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.42" />
         <Stop offset="35%" stopColor="#E0F4FF" stopOpacity="0.14" />
         <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.02" />
       </LinearGradient>
 
-      {/* Smoked sunglass lens gradient */}
       <LinearGradient id="sunglassLensGrad" x1="0" y1="0" x2="0" y2="1">
         <Stop offset="0%" stopColor="#1E202B" stopOpacity="0.88" />
         <Stop offset="100%" stopColor="#12131A" stopOpacity="0.76" />
@@ -46,10 +42,6 @@ function AccessoryDefs() {
   );
 }
 
-/**
- * Renders an individual accessory centered at (0, 0) so it can be reused
- * both on the pet avatar and in the Shop / Wardrobe visual preview cards.
- */
 function renderAccessoryShape(id: AccessoryId) {
   switch (id) {
     case 'crown_gold':
@@ -104,7 +96,6 @@ function renderAccessoryShape(id: AccessoryId) {
     case 'glasses_round':
       return (
         <G>
-          {/* Bridge */}
           <Path
             d="M -9,-1 Q 0,-6 9,-1"
             fill="none"
@@ -112,11 +103,9 @@ function renderAccessoryShape(id: AccessoryId) {
             strokeWidth="2.8"
             strokeLinecap="round"
           />
-          {/* Side arms */}
           <Path d="M -39,0 L -45,-3" stroke="#262B44" strokeWidth="2.8" strokeLinecap="round" />
           <Path d="M 39,0 L 45,-3" stroke="#262B44" strokeWidth="2.8" strokeLinecap="round" />
 
-          {/* Left Crystal Clear Lens */}
           <Circle
             cx="-24"
             cy="0"
@@ -134,7 +123,6 @@ function renderAccessoryShape(id: AccessoryId) {
           />
           <Circle cx="-16" cy="7" r="1.4" fill="#FFFFFF" opacity="0.85" />
 
-          {/* Right Crystal Clear Lens */}
           <Circle
             cx="24"
             cy="0"
@@ -157,7 +145,6 @@ function renderAccessoryShape(id: AccessoryId) {
     case 'glasses_cool':
       return (
         <G>
-          {/* Left Smoked Lens */}
           <Path
             d="M -38,-6 L -9,-6 C -7,2 -8,12 -24,13 C -38,13 -40,4 -38,-6 Z"
             fill="url(#sunglassLensGrad)"
@@ -170,7 +157,6 @@ function renderAccessoryShape(id: AccessoryId) {
             opacity="0.55"
           />
 
-          {/* Right Smoked Lens */}
           <Path
             d="M 9,-6 L 38,-6 C 40,4 38,13 24,13 C 8,12 7,2 9,-6 Z"
             fill="url(#sunglassLensGrad)"
@@ -183,7 +169,6 @@ function renderAccessoryShape(id: AccessoryId) {
             opacity="0.55"
           />
 
-          {/* Wayfarer Frame */}
           <Path
             d="M -42,-7 L -9,-7 L -5,-4 L 5,-4 L 9,-7 L 42,-7 C 45,-3 43,14 24,15 C 8,16 6,7 4,3 L -4,3 C -6,7 -8,16 -24,15 C -43,14 -45,-3 -42,-7 Z"
             fill="none"
@@ -253,10 +238,6 @@ function renderAccessoryShape(id: AccessoryId) {
   }
 }
 
-/**
- * Visual Preview component for Shop & Wardrobe cards so the user clearly sees
- * the illustrated accessory before and after equipping it.
- */
 export function AccessoryPreview({ id, size = 56 }: { id: AccessoryId; size?: number }) {
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -276,11 +257,10 @@ export default function AccessoryOverlay({ equipped, size }: Props) {
   if (!hasHead && !hasFace && !hasNeck) return null;
 
   return (
-    <View pointerEvents="none" style={[styles.container, { width: size, height: size }]}>
+    <View pointerEvents="none" style={[accessoryOverlayStyles.container, { width: size, height: size }]}>
       <Svg width={size} height={size} viewBox="0 0 220 220" style={{ overflow: 'visible' }}>
         <AccessoryDefs />
 
-        {/* 1. HEAD ACCESSORIES */}
         {equipped.head === 'crown_gold' && (
           <G transform="translate(110, 34)">{renderAccessoryShape('crown_gold')}</G>
         )}
@@ -291,7 +271,6 @@ export default function AccessoryOverlay({ equipped, size }: Props) {
           <G transform="translate(76, 48)">{renderAccessoryShape('flower_pin')}</G>
         )}
 
-        {/* 2. FACE / GLASSES ACCESSORIES */}
         {equipped.face === 'glasses_round' && (
           <G transform="translate(110, 84)">{renderAccessoryShape('glasses_round')}</G>
         )}
@@ -299,7 +278,6 @@ export default function AccessoryOverlay({ equipped, size }: Props) {
           <G transform="translate(110, 84)">{renderAccessoryShape('glasses_cool')}</G>
         )}
 
-        {/* 3. NECK ACCESSORIES */}
         {equipped.neck === 'bowtie_red' && (
           <G transform="translate(110, 124)">{renderAccessoryShape('bowtie_red')}</G>
         )}
@@ -310,12 +288,3 @@ export default function AccessoryOverlay({ equipped, size }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 20,
-  },
-});

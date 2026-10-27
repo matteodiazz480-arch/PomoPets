@@ -4,8 +4,6 @@ export const colors = {
   groundLight: '#DFF4E3',
   groundDark: '#C9ECD1',
 
-  // Warm, cozy "storybook room" neutrals (matched to the fondo1 illustration) —
-  // used for every card, shadow and body of text across the app.
   appBg: '#FBF5EC',
   card: '#FFFCF7',
   cardAlt: '#FBEEE0',

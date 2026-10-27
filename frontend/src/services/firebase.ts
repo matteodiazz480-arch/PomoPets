@@ -7,6 +7,7 @@ import {
   onSnapshot,
   serverTimestamp,
   setDoc,
+  type QuerySnapshot,
 } from 'firebase/firestore';
 
 export const firebaseConfig = {
@@ -19,10 +20,7 @@ export const firebaseConfig = {
   measurementId: 'G-ZC69ZPG3F5',
 };
 
-// Initialize Firebase App singleton
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-
-// Initialize Cloud Firestore
 export const db = getFirestore(app);
 
 export type TournamentPlayer = {
@@ -37,9 +35,29 @@ export type TournamentPlayer = {
   updatedAt?: any;
 };
 
-/**
- * Publishes or updates the player's score and profile photo to the global Firestore leaderboard
- */
+function parseAndSortLeaderboard(snapshot: QuerySnapshot, criteria: 'xp' | 'hours'): TournamentPlayer[] {
+  const players: TournamentPlayer[] = [];
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    players.push({
+      id: docSnap.id,
+      name: data.name ?? 'Jugador',
+      petName: data.petName ?? 'Mascota',
+      level: Number(data.level ?? 1),
+      totalXp: Number(data.totalXp ?? 0),
+      minutesStudied: Number(data.minutesStudied ?? 0),
+      streak: Number(data.streak ?? 0),
+      photoUrl: data.photoUrl || '',
+    });
+  });
+
+  players.sort((a, b) =>
+    criteria === 'xp' ? b.totalXp - a.totalXp : b.minutesStudied - a.minutesStudied
+  );
+
+  return players;
+}
+
 export async function syncPlayerScore(player: TournamentPlayer): Promise<boolean> {
   try {
     if (!player.id) return false;
@@ -59,86 +77,36 @@ export async function syncPlayerScore(player: TournamentPlayer): Promise<boolean
       { merge: true }
     );
     return true;
-  } catch (error) {
-    console.warn('[Firebase] Could not sync player score to Firestore:', error);
+  } catch {
     return false;
   }
 }
 
-/**
- * Fetches the global tournament leaderboard of all real users in Firestore
- */
 export async function fetchLeaderboard(
   criteria: 'xp' | 'hours' = 'xp'
 ): Promise<TournamentPlayer[]> {
   try {
     const snapshot = await getDocs(collection(db, 'leaderboard'));
-    const players: TournamentPlayer[] = [];
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      players.push({
-        id: docSnap.id,
-        name: data.name ?? 'Jugador',
-        petName: data.petName ?? 'Mascota',
-        level: Number(data.level ?? 1),
-        totalXp: Number(data.totalXp ?? 0),
-        minutesStudied: Number(data.minutesStudied ?? 0),
-        streak: Number(data.streak ?? 0),
-        photoUrl: data.photoUrl || '',
-      });
-    });
-
-    players.sort((a, b) =>
-      criteria === 'xp' ? b.totalXp - a.totalXp : b.minutesStudied - a.minutesStudied
-    );
-
-    return players;
-  } catch (error) {
-    console.warn('[Firebase] Could not fetch leaderboard:', error);
+    return parseAndSortLeaderboard(snapshot, criteria);
+  } catch {
     return [];
   }
 }
 
-/**
- * Real-time listener for the tournament leaderboard
- */
 export function subscribeToLeaderboard(
   criteria: 'xp' | 'hours',
   callback: (players: TournamentPlayer[]) => void
 ): () => void {
   try {
     const colRef = collection(db, 'leaderboard');
-    const unsubscribe = onSnapshot(
+    return onSnapshot(
       colRef,
       (snapshot) => {
-        const players: TournamentPlayer[] = [];
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          players.push({
-            id: docSnap.id,
-            name: data.name ?? 'Jugador',
-            petName: data.petName ?? 'Mascota',
-            level: Number(data.level ?? 1),
-            totalXp: Number(data.totalXp ?? 0),
-            minutesStudied: Number(data.minutesStudied ?? 0),
-            streak: Number(data.streak ?? 0),
-            photoUrl: data.photoUrl || '',
-          });
-        });
-
-        players.sort((a, b) =>
-          criteria === 'xp' ? b.totalXp - a.totalXp : b.minutesStudied - a.minutesStudied
-        );
-
-        callback(players);
+        callback(parseAndSortLeaderboard(snapshot, criteria));
       },
-      (error) => {
-        console.warn('[Firebase] Leaderboard subscription error:', error);
-      }
+      () => {}
     );
-    return unsubscribe;
-  } catch (error) {
-    console.warn('[Firebase] Could not set up leaderboard subscription:', error);
+  } catch {
     return () => {};
   }
 }

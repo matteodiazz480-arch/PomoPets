@@ -3,14 +3,14 @@ import { useIsFocused } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, View } from 'react-native';
 import { useGame } from '../context/GameContext';
-import AccessoryOverlay from './AccessoryOverlay';
 import type { AccessoryCategory, AccessoryId } from '../data/accessories';
+import { petAvatarStyles } from '../style';
+import AccessoryOverlay from './AccessoryOverlay';
 
 type Props = {
   eyesOpen: any;
   eyesClosed: any;
   size?: number;
-  /** Bump this number (e.g. +1) whenever the pet is fed to trigger the reaction animation. */
   feedSignal?: number;
   equipped?: Partial<Record<AccessoryCategory, AccessoryId>>;
 };
@@ -151,10 +151,10 @@ export default function PetAvatar({
   const sparkleOpacity = sparkle.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 1, 0] });
 
   return (
-    <View style={[styles.wrap, { width: size, height: size }]}>
+    <View style={[petAvatarStyles.wrap, { width: size, height: size }]}>
       <Animated.View
         style={[
-          styles.petImageFrame,
+          petAvatarStyles.petImageFrame,
           { width: size, height: size },
           { transform: [{ scale: bumpScale }] },
         ]}
@@ -168,7 +168,7 @@ export default function PetAvatar({
           <Image
             source={eyesOpen}
             style={[
-              styles.petSprite,
+              petAvatarStyles.petSprite,
               { width: imageWidth, height: size, left: (size - imageWidth) / 2 },
             ]}
             resizeMode="contain"
@@ -176,7 +176,7 @@ export default function PetAvatar({
           <Image
             source={eyesClosed}
             style={[
-              styles.closedEyes,
+              petAvatarStyles.closedEyes,
               {
                 width: imageWidth,
                 height: size,
@@ -187,17 +187,14 @@ export default function PetAvatar({
             ]}
             resizeMode="contain"
           />
-
-          {/* Equipped Hats, Glasses, Bowties, Scarves */}
           <AccessoryOverlay equipped={activeEquipped} size={size} />
         </Animated.View>
       </Animated.View>
 
-      {/* Feed Heart Floating Reaction */}
       <Animated.View
         pointerEvents="none"
         style={[
-          styles.sparkle,
+          petAvatarStyles.sparkle,
           { opacity: sparkleOpacity, transform: [{ translateY: sparkleTranslateY }] },
         ]}
       >
@@ -206,26 +203,3 @@ export default function PetAvatar({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  petImageFrame: {
-    position: 'absolute',
-    overflow: 'visible',
-  },
-  petSprite: {
-    position: 'absolute',
-    top: 0,
-  },
-  closedEyes: {
-    position: 'absolute',
-  },
-  sparkle: {
-    position: 'absolute',
-    top: '16%',
-    alignSelf: 'center',
-  },
-});

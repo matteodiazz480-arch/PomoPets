@@ -1,20 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
 import HabitatBackground from '../components/HabitatBackground';
-import { useGame } from '../context/GameContext';
 import HabitatScreen from '../screens/HabitatScreen';
 import PcNotAvailableScreen from '../screens/PcNotAvailableScreen';
 import PetCareScreen from '../screens/PetCareScreen';
 import ProgressScreen from '../screens/ProgressScreen';
 import ShopScreen from '../screens/ShopScreen';
 import TournamentScreen from '../screens/TournamentScreen';
-import { colors } from '../theme/colors';
+import { colors, rootNavigatorStyles } from '../style';
 
 const Tab = createBottomTabNavigator();
 
@@ -28,8 +27,6 @@ const TABS: Record<string, { icon: IconName; iconFocused: IconName; label: strin
   Progreso: { icon: 'star-outline', iconFocused: 'star', label: 'Progreso' },
 };
 
-const SIDEBAR_WIDTH = 248;
-
 function AppTabs({ desktop }: { desktop: boolean }) {
   return (
     <Tab.Navigator
@@ -40,9 +37,10 @@ function AppTabs({ desktop }: { desktop: boolean }) {
         return {
           headerShown: false,
           animation: 'none',
-          freezeOnBlur: false,
+          lazy: true,
+          freezeOnBlur: true,
           sceneStyle: desktop
-            ? [styles.desktopScene, route.name !== focusedRoute && styles.hiddenDesktopScene]
+            ? [rootNavigatorStyles.desktopScene, route.name !== focusedRoute && rootNavigatorStyles.hiddenDesktopScene]
             : { backgroundColor: colors.appBg },
         };
       }}
@@ -81,15 +79,15 @@ function AnimatedTabItem({
         Animated.spring(scale, { toValue: 1, friction: 5, tension: 180, useNativeDriver: true }),
       ]).start();
     }
-  }, [focused]);
+  }, [focused, scale]);
 
   return (
     <TouchableOpacity
       key={routeKey}
       style={[
-        styles.tabItem,
-        desktop && styles.desktopTabItem,
-        focused && styles.tabItemFocused,
+        rootNavigatorStyles.tabItem,
+        desktop && rootNavigatorStyles.desktopTabItem,
+        focused && rootNavigatorStyles.tabItemFocused,
       ]}
       activeOpacity={0.8}
       accessibilityRole="button"
@@ -110,9 +108,9 @@ function AnimatedTabItem({
         />
         <Text
           style={[
-            styles.tabLabel,
-            desktop && styles.desktopTabLabel,
-            focused && styles.tabLabelFocused,
+            rootNavigatorStyles.tabLabel,
+            desktop && rootNavigatorStyles.desktopTabLabel,
+            focused && rootNavigatorStyles.tabLabelFocused,
           ]}
           numberOfLines={1}
         >
@@ -129,17 +127,17 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   return (
     <View
       style={[
-        styles.tabBarWrap,
-        desktop && styles.desktopTabBarWrap,
+        rootNavigatorStyles.tabBarWrap,
+        desktop && rootNavigatorStyles.desktopTabBarWrap,
         { paddingBottom: desktop ? 0 : insets.bottom + 10 },
       ]}
       pointerEvents="box-none"
     >
-      <View style={[styles.tabBar, desktop && styles.desktopTabBar]}>
+      <View style={[rootNavigatorStyles.tabBar, desktop && rootNavigatorStyles.desktopTabBar]}>
         {desktop && (
-          <View style={styles.brand}>
-            <Text style={styles.brandTitle}>PomoPets</Text>
-            <Text style={styles.brandSubtitle}>Estudia y crece</Text>
+          <View style={rootNavigatorStyles.brand}>
+            <Text style={rootNavigatorStyles.brandTitle}>PomoPets</Text>
+            <Text style={rootNavigatorStyles.brandSubtitle}>Estudia y crece</Text>
           </View>
         )}
         {state.routes.map((route, index) => {
@@ -181,7 +179,6 @@ export default function RootNavigator() {
     return false;
   });
   const desktop = width >= 900;
-  const { state } = useGame();
 
   const handleBypass = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.sessionStorage) {
@@ -195,7 +192,7 @@ export default function RootNavigator() {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={rootNavigatorStyles.root}>
       {desktop && (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <HabitatBackground />
@@ -216,125 +213,3 @@ export default function RootNavigator() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.appBg,
-  },
-  desktopScene: {
-    marginLeft: SIDEBAR_WIDTH,
-    backgroundColor: 'transparent',
-  },
-  hiddenDesktopScene: {
-    display: 'none',
-  },
-  tabBarWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  desktopTabBarWrap: {
-    top: 0,
-    right: undefined,
-    width: SIDEBAR_WIDTH,
-    alignItems: 'stretch',
-    paddingHorizontal: 0,
-    paddingTop: 24,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    width: '100%',
-    maxWidth: 580,
-    backgroundColor: colors.card,
-    borderRadius: 24,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderWidth: 2,
-    borderColor: '#E6D5BF',
-    borderBottomWidth: 5,
-    borderBottomColor: '#D9C5AB',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 7 },
-    shadowOpacity: 1,
-    shadowRadius: 14,
-    elevation: 7,
-  },
-  desktopTabBar: {
-    flex: 1,
-    flexDirection: 'column',
-    width: '100%',
-    maxWidth: undefined,
-    alignItems: 'stretch',
-    justifyContent: 'flex-start',
-    backgroundColor: 'rgba(255, 253, 249, 0.84)',
-    borderRadius: 0,
-    paddingHorizontal: 14,
-    paddingVertical: 18,
-    borderWidth: 0,
-    borderRightWidth: 1,
-    borderRightColor: 'rgba(240, 226, 208, 0.8)',
-    borderBottomWidth: 0,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  brand: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginBottom: 30,
-  },
-  brandTitle: {
-    color: colors.textPrimary,
-    fontSize: 26,
-    fontWeight: '900',
-    letterSpacing: -0.6,
-  },
-  brandSubtitle: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 3,
-  },
-  tabItem: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-    borderRadius: 18,
-    gap: 3,
-  },
-  desktopTabItem: {
-    flex: 0,
-    minHeight: 64,
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 10,
-    borderRadius: 16,
-    gap: 12,
-  },
-  tabItemFocused: {
-    backgroundColor: colors.cardAlt,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginTop: 1,
-  },
-  desktopTabLabel: {
-    fontSize: 15,
-  },
-  tabLabelFocused: {
-    color: colors.primaryDark,
-    fontWeight: '700',
-  },
-});

@@ -6,6 +6,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { confettiEffectStyles } from '../style';
 
 interface Props {
   active: boolean;
@@ -47,7 +48,6 @@ export default function ConfettiEffect({ active, onFinish, count = 36 }: Props) 
       return;
     }
 
-    // Generate lightweight particles once
     const newParticles: Particle[] = Array.from({ length: count }).map((_, i) => ({
       id: i,
       startX: Math.random() * width,
@@ -111,7 +111,7 @@ export default function ConfettiEffect({ active, onFinish, count = 36 }: Props) 
           <Animated.View
             key={p.id}
             style={[
-              styles.particle,
+              confettiEffectStyles.particle,
               {
                 width: p.size.w,
                 height: p.size.h,
@@ -127,11 +127,3 @@ export default function ConfettiEffect({ active, onFinish, count = 36 }: Props) 
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  particle: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-});

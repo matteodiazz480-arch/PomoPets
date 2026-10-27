@@ -31,32 +31,21 @@ export default function CoinIcon({ size = 24, style }: Props) {
           </LinearGradient>
         </Defs>
 
-        {/* 3D bottom bevel / rim */}
         <Circle cx="50" cy="54" r="46" fill="url(#coinBevel)" />
-
-        {/* Main face */}
         <Circle cx="50" cy="49" r="46" fill="url(#coinGrad)" stroke="#B86C00" strokeWidth="2.5" />
-
-        {/* Embossed inner ring */}
         <Circle cx="50" cy="49" r="36" fill="none" stroke="#FFE97D" strokeWidth="3" opacity={0.9} />
         <Circle cx="50" cy="49.8" r="37" fill="none" stroke="#C97500" strokeWidth="1.5" opacity={0.55} />
-
-        {/* Central sparkling star */}
         <Path
           d="M50 28 C50 38 41 49 30 49 C41 49 50 60 50 70 C50 60 59 49 70 49 C59 49 50 38 50 28 Z"
           fill="url(#starGrad)"
           stroke="#C27300"
           strokeWidth="1.8"
         />
-
-        {/* Top-left soft shine highlight */}
         <Path
           d="M24 38 A34 34 0 0 1 76 38 A35 32 0 0 0 24 38 Z"
           fill="#FFFFFF"
           opacity={0.42}
         />
-
-        {/* Twinkle dot */}
         <Circle cx="35" cy="30" r="3.2" fill="#FFFFFF" opacity={0.85} />
       </Svg>
     </View>

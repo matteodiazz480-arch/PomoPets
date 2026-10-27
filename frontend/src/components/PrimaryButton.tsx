@@ -5,12 +5,11 @@ import {
   AccessibilityInfo,
   Animated,
   GestureResponderEvent,
-  StyleSheet,
   Text,
   TouchableOpacity,
 } from 'react-native';
 import { playSound, type SoundName } from '../audio/sounds';
-import { colors } from '../theme/colors';
+import { colors, primaryButtonStyles } from '../style';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -89,7 +88,7 @@ export default function PrimaryButton({
       name={iconName}
       size={variant === 'ghost' ? (size === 'large' ? 18 : 15) : size === 'large' ? 21 : 18}
       color={ICON_COLOR[variant]}
-      style={styles.icon}
+      style={primaryButtonStyles.icon}
     />
   ) : null;
 
@@ -101,17 +100,19 @@ export default function PrimaryButton({
         onPressOut={handlePressOut}
         disabled={disabled}
         activeOpacity={0.8}
-        style={disabled && styles.disabled}
+        style={disabled && primaryButtonStyles.disabled}
       >
         <Animated.View
           style={[
-            styles.ghost,
-            size === 'large' && styles.largeGhost,
+            primaryButtonStyles.ghost,
+            size === 'large' && primaryButtonStyles.largeGhost,
             { transform: [{ scale: pressScale }] },
           ]}
         >
           {iconEl}
-          <Text style={[styles.ghostLabel, size === 'large' && styles.largeGhostLabel]}>{label}</Text>
+          <Text style={[primaryButtonStyles.ghostLabel, size === 'large' && primaryButtonStyles.largeGhostLabel]}>
+            {label}
+          </Text>
         </Animated.View>
       </TouchableOpacity>
     );
@@ -125,17 +126,19 @@ export default function PrimaryButton({
         onPressOut={handlePressOut}
         disabled={disabled}
         activeOpacity={0.85}
-        style={disabled && styles.disabled}
+        style={disabled && primaryButtonStyles.disabled}
       >
         <Animated.View
           style={[
-            styles.secondary,
-            size === 'large' && styles.largeSecondary,
+            primaryButtonStyles.secondary,
+            size === 'large' && primaryButtonStyles.largeSecondary,
             { transform: [{ scale: pressScale }] },
           ]}
         >
           {iconEl}
-          <Text style={[styles.secondaryLabel, size === 'large' && styles.largeSecondaryLabel]}>{label}</Text>
+          <Text style={[primaryButtonStyles.secondaryLabel, size === 'large' && primaryButtonStyles.largeSecondaryLabel]}>
+            {label}
+          </Text>
         </Animated.View>
       </TouchableOpacity>
     );
@@ -148,117 +151,21 @@ export default function PrimaryButton({
       onPressOut={handlePressOut}
       disabled={disabled}
       activeOpacity={0.85}
-      style={disabled && styles.disabled}
+      style={disabled && primaryButtonStyles.disabled}
     >
       <Animated.View
         style={[
-          styles.primary,
-          size === 'large' && styles.largePrimary,
+          primaryButtonStyles.primary,
+          size === 'large' && primaryButtonStyles.largePrimary,
           { transform: [{ scale: pressScale }] },
         ]}
       >
-        <Animated.View style={styles.primaryHighlight} pointerEvents="none" />
+        <Animated.View style={primaryButtonStyles.primaryHighlight} pointerEvents="none" />
         {iconEl}
-        <Text style={[styles.primaryLabel, size === 'large' && styles.largeLabel]}>{label}</Text>
+        <Text style={[primaryButtonStyles.primaryLabel, size === 'large' && primaryButtonStyles.largeLabel]}>
+          {label}
+        </Text>
       </Animated.View>
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  icon: {
-    marginRight: 8,
-  },
-  primary: {
-    flexDirection: 'row',
-    paddingVertical: 15,
-    paddingHorizontal: 28,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    borderWidth: 2.5,
-    borderColor: colors.primaryDark,
-    borderBottomWidth: 6,
-    borderBottomColor: colors.primaryDeep,
-    overflow: 'hidden',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  primaryHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '48%',
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    borderTopLeftRadius: 21,
-    borderTopRightRadius: 21,
-  },
-  primaryLabel: {
-    color: colors.white,
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  largePrimary: {
-    minWidth: 290,
-    minHeight: 64,
-    paddingVertical: 18,
-    paddingHorizontal: 34,
-    borderRadius: 28,
-  },
-  largeLabel: {
-    fontSize: 19,
-  },
-  largeSecondaryLabel: {
-    fontSize: 17,
-  },
-  largeGhostLabel: {
-    fontSize: 16,
-  },
-  secondary: {
-    flexDirection: 'row',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 2,
-    borderColor: colors.border,
-  },
-  largeSecondary: {
-    minWidth: 190,
-    minHeight: 60,
-    paddingVertical: 17,
-    paddingHorizontal: 30,
-  },
-  secondaryLabel: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  ghost: {
-    flexDirection: 'row',
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  largeGhost: {
-    minHeight: 56,
-    paddingVertical: 14,
-    paddingHorizontal: 22,
-  },
-  ghostLabel: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  disabled: {
-    opacity: 0.45,
-  },
-});

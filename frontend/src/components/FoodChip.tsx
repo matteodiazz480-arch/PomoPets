@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import React, { useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { Animated, Easing, Text, TouchableWithoutFeedback, View } from 'react-native';
+import { foodChipStyles } from '../style';
 
 type Props = {
   icon: string;
@@ -35,51 +35,12 @@ export default function FoodChip({ icon, count, onFeed }: Props) {
       accessibilityRole="button"
       accessibilityLabel={`Alimentar con ${icon}. Cantidad: ${count}`}
     >
-      <Animated.View style={[styles.chip, { transform: [{ scale }] }]}>
-        <Text style={styles.icon}>{icon}</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{count}</Text>
+      <Animated.View style={[foodChipStyles.chip, { transform: [{ scale }] }]}>
+        <Text style={foodChipStyles.icon}>{icon}</Text>
+        <View style={foodChipStyles.badge}>
+          <Text style={foodChipStyles.badgeText}>{count}</Text>
         </View>
       </Animated.View>
     </TouchableWithoutFeedback>
   );
 }
-
-const styles = StyleSheet.create({
-  chip: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderBottomWidth: 4,
-    borderBottomColor: '#E6D5BF',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.7,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  icon: {
-    fontSize: 26,
-  },
-  badge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: colors.primary,
-    borderRadius: 9,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderWidth: 1.5,
-    borderColor: colors.card,
-  },
-  badgeText: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 10,
-    color: '#ffffff',
-  },
-});

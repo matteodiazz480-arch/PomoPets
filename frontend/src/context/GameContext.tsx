@@ -2,10 +2,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { playSound } from '../audio/sounds';
+import { ALL_ACCESSORY_IDS, getAccessoryById, type AccessoryCategory, type AccessoryId } from '../data/accessories';
 import { getFoodById, type FoodId } from '../data/food';
 import { getMissionById, type MissionId } from '../data/missions';
-import { getAccessoryById, ALL_ACCESSORY_IDS, type AccessoryCategory, type AccessoryId } from '../data/accessories';
-import { syncPlayerScore } from '../services/firebase';
+import {
+  COINS_PER_MINUTE,
+  COINS_SESSION_BONUS,
+  levelFromTotalXp,
+  XP_PER_MINUTE,
+  XP_SESSION_BONUS,
+} from '../data/progression';
 import {
   cancelCareReminder,
   cancelNotification,
@@ -14,18 +20,10 @@ import {
   scheduleTimerNotification,
   showTimerProgressNotification,
 } from '../notifications/notifications';
-import {
-  COINS_PER_MINUTE,
-  COINS_SESSION_BONUS,
-  levelFromTotalXp,
-  XP_PER_MINUTE,
-  XP_SESSION_BONUS,
-} from '../data/progression';
+import { syncPlayerScore, type TournamentPlayer } from '../services/firebase';
 
 const STORAGE_KEY = 'pomopets:v1';
-
 const MAX_STAT = 100;
-// Accelerated hunger & metabolism decay so pet requires regular caring
 const STAT_DECAY_PER_DAY = 55;
 
 type TimerPhase = 'idle' | 'focus' | 'break';
@@ -45,7 +43,7 @@ type GameState = {
   coins: number;
   totalXp: number;
   streak: number;
-  lastStudyDate: string | null; // yyyy-mm-dd
+  lastStudyDate: string | null;
   pomodoroMinutes: number;
   breakMinutes: number;
   sessionsCompletedToday: number;
@@ -60,12 +58,10 @@ type GameState = {
   equippedAccessories: Partial<Record<AccessoryCategory, AccessoryId>>;
   lastStatsDecayDate: string | null;
   feedsToday: number;
-  // Timer snapshot, persisted purely so the countdown survives the app being
-  // fully closed and reopened — see resyncTimer for how it's used.
   timerPhase: TimerPhase;
   timerRunning: boolean;
-  timerEndAt: number | null; // epoch ms, valid only while timerRunning
-  timerSecondsSnapshot: number; // valid only while !timerRunning
+  timerEndAt: number | null;
+  timerSecondsSnapshot: number;
 };
 
 const DEFAULT_STATE: GameState = {
@@ -111,6 +107,20 @@ function daysBetween(a: string, b: string): number {
   return Math.round((db - da) / 86400000);
 }
 
+function buildPlayerPayload(gs: GameState, overrides?: Partial<TournamentPlayer>): TournamentPlayer {
+  return {
+    id: gs.playerId || 'player_default',
+    name: gs.playerName || 'Jugador',
+    petName: gs.petName || 'Cornolín',
+    level: levelFromTotalXp(gs.totalXp).level,
+    totalXp: gs.totalXp,
+    minutesStudied: gs.minutesStudiedTotal,
+    streak: gs.streak,
+    photoUrl: gs.photoUrl || '',
+    ...overrides,
+  };
+}
+
 type GameContextValue = {
   state: GameState;
   loaded: boolean;
@@ -154,15 +164,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [secondsLeft, setSecondsLeft] = useState(DEFAULT_STATE.pomodoroMinutes * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [lastReward, setLastReward] = useState<{ xp: number; coins: number } | null>(null);
-  // Bumped every time the app returns to the foreground, purely to force the
-  // countdown effect below to rebuild its interval — isRunning/phase alone
-  // may be unchanged across a background trip, so they wouldn't trigger it.
   const [activeTick, setActiveTick] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerNotifRef = useRef<string | null>(null);
 
-  // Mirrors for values the AppState listener and callbacks need fresh —
-  // without these, closures captured at effect-setup time would see stale data.
   const stateRef = useRef(state);
   const secondsLeftRef = useRef(secondsLeft);
   const phaseRef = useRef(phase);
@@ -214,18 +219,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const updatedTotalXp = prev.totalXp + earnedXp;
       const updatedMinutes = prev.minutesStudiedTotal + prev.pomodoroMinutes;
 
-      // Automatically sync updated score in background to Google Firestore
       setTimeout(() => {
-        syncPlayerScore({
-          id: prev.playerId || 'player_default',
-          name: prev.playerName || 'Estudiante',
-          petName: prev.petName || 'Cornolín',
-          level: nextLevel,
-          totalXp: updatedTotalXp,
-          minutesStudied: updatedMinutes,
-          streak,
-          photoUrl: prev.photoUrl || '',
-        }).catch(() => {});
+        syncPlayerScore(
+          buildPlayerPayload(prev, {
+            level: nextLevel,
+            totalXp: updatedTotalXp,
+            minutesStudied: updatedMinutes,
+            streak,
+          })
+        ).catch(() => {});
       }, 50);
 
       return {
@@ -252,10 +254,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Reconciles the live timer against wall-clock time — called on load (the app
-  // may have been closed through a phase boundary) and whenever the app comes
-  // back to the foreground (it may have been backgrounded through one, since
-  // JS timers don't tick while backgrounded).
   const resyncTimer = useCallback(
     (gs: GameState) => {
       if (!gs.timerRunning || gs.timerEndAt == null) {
@@ -273,7 +271,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // The running phase finished while the app was away — settle it now.
       cancelNotification(timerNotifRef.current);
       timerNotifRef.current = null;
 
@@ -316,7 +313,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (parsed.playerName && parsed.playerName.startsWith('Estudiante')) {
             parsed.playerName = '';
           }
-          // Ensure all accessories are unlocked for free test & exploration
           parsed.ownedAccessories = Array.from(new Set([...(parsed.ownedAccessories ?? []), ...ALL_ACCESSORY_IDS]));
           setState(parsed);
           resyncTimer(parsed);
@@ -331,22 +327,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         setLoaded(true);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [resyncTimer]);
 
-  // Ensure current user is always published to Firestore as an active tournament participant
   useEffect(() => {
     if (!loaded || !state.playerId) return;
-    syncPlayerScore({
-      id: state.playerId,
-      name: state.playerName || 'Estudiante',
-      petName: state.petName || 'Cornolín',
-      level: levelFromTotalXp(state.totalXp).level,
-      totalXp: state.totalXp,
-      minutesStudied: state.minutesStudiedTotal,
-      streak: state.streak,
-      photoUrl: state.photoUrl || '',
-    }).catch(() => {});
+    syncPlayerScore(buildPlayerPayload(state)).catch(() => {});
   }, [loaded, state.playerId]);
 
   useEffect(() => {
@@ -354,10 +339,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
   }, [state, loaded]);
 
-  // Reset daily mission counters whenever a new day starts (e.g. app reopened tomorrow),
-  // let hunger/happiness decay for each day that passed without a study session, and
-  // break the streak outright the moment a full day was skipped — it shouldn't linger
-  // at its old value until the next completed session quietly overwrites it.
   useEffect(() => {
     if (!loaded) return;
     setState((prev) => {
@@ -409,19 +390,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     });
   }, [loaded]);
 
-  // Backgrounding: kill the ticking interval immediately — on Android, unlike
-  // iOS, JS keeps running while backgrounded unless told otherwise, so a
-  // per-second interval left alive here would spin for as long as the app
-  // sits in the background, burning CPU/battery the whole time (this is the
-  // fix for that). Wall-clock resync on return covers the elapsed time
-  // instead, so nothing needs to tick while nobody's looking. Also arms a
-  // single gentle reminder if the pet needs attention or the streak hasn't
-  // been extended today, and — if a Pomodoro is actively running — posts a
-  // status-bar snapshot of how much time is left.
-  // Foregrounding: that reminder and status notification are no longer
-  // needed, and activeTick forces a fresh interval to be created (isRunning
-  // itself may not have "changed" across the trip, so the effect below
-  // wouldn't otherwise know to rebuild it).
   useEffect(() => {
     const onChange = (next: AppStateStatus) => {
       if (next === 'active') {
@@ -511,8 +479,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       });
     }, 1000);
     return clearInterval_;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRunning, phase, activeTick]);
+  }, [isRunning, phase, activeTick, clearInterval_, completeFocusSession]);
 
   const startFocus = useCallback(() => {
     const seconds = stateRef.current.pomodoroMinutes * 60;
@@ -674,16 +641,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!trimmed) return;
     setState((prev) => {
       const next = { ...prev, playerName: trimmed };
-      syncPlayerScore({
-        id: next.playerId || 'player_default',
-        name: trimmed,
-        petName: next.petName || 'Cornolín',
-        level: levelFromTotalXp(next.totalXp).level,
-        totalXp: next.totalXp,
-        minutesStudied: next.minutesStudiedTotal,
-        streak: next.streak,
-        photoUrl: next.photoUrl || '',
-      }).catch(() => {});
+      syncPlayerScore(buildPlayerPayload(next, { name: trimmed })).catch(() => {});
       return next;
     });
   }, []);
@@ -691,32 +649,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const setPhotoUrl = useCallback((url: string | null) => {
     setState((prev) => {
       const next = { ...prev, photoUrl: url };
-      syncPlayerScore({
-        id: next.playerId || 'player_default',
-        name: next.playerName || 'Estudiante',
-        petName: next.petName || 'Cornolín',
-        level: levelFromTotalXp(next.totalXp).level,
-        totalXp: next.totalXp,
-        minutesStudied: next.minutesStudiedTotal,
-        streak: next.streak,
-        photoUrl: url || '',
-      }).catch(() => {});
+      syncPlayerScore(buildPlayerPayload(next, { photoUrl: url || '' })).catch(() => {});
       return next;
     });
   }, []);
 
   const syncScoreToCloud = useCallback(async () => {
     if (!state.playerId) return false;
-    return syncPlayerScore({
-      id: state.playerId,
-      name: state.playerName,
-      petName: state.petName || 'Cornolín',
-      level: levelFromTotalXp(state.totalXp).level,
-      totalXp: state.totalXp,
-      minutesStudied: state.minutesStudiedTotal,
-      streak: state.streak,
-      photoUrl: state.photoUrl || '',
-    });
+    return syncPlayerScore(buildPlayerPayload(state));
   }, [state]);
 
   const addTask = useCallback((text: string) => {

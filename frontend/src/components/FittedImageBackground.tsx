@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Image, StyleSheet, View, useWindowDimensions, type ImageSourcePropType } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState } from 'react';
+import { Image, View, useWindowDimensions, type ImageSourcePropType } from 'react-native';
+import { fittedImageBackgroundStyles } from '../style';
 
 type Props = {
   source: ImageSourcePropType;
@@ -23,14 +24,15 @@ export default function FittedImageBackground({
   const height = frame.height || window.height;
   const desktop = window.width >= 900;
   const fullCover = desktop && coverOnDesktop;
-  const imageWidth = desktop && !fullCover
-    ? Math.min(width, height * aspectRatio)
-    : Math.max(width, height * aspectRatio);
+  const imageWidth =
+    desktop && !fullCover
+      ? Math.min(width, height * aspectRatio)
+      : Math.max(width, height * aspectRatio);
   const imageHeight = imageWidth / aspectRatio;
 
   return (
     <View
-      style={[styles.container, { backgroundColor }]}
+      style={[fittedImageBackgroundStyles.container, { backgroundColor }]}
       onLayout={({ nativeEvent }) => {
         const { width: nextWidth, height: nextHeight } = nativeEvent.layout;
         if (nextWidth !== frame.width || nextHeight !== frame.height) {
@@ -42,7 +44,7 @@ export default function FittedImageBackground({
         source={source}
         resizeMode="cover"
         style={[
-          styles.image,
+          fittedImageBackgroundStyles.image,
           {
             width: imageWidth,
             height: imageHeight,
@@ -57,33 +59,14 @@ export default function FittedImageBackground({
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[
-            styles.desktopFade,
+            fittedImageBackgroundStyles.desktopFade,
             { left: Math.max(0, imageWidth - 120) },
           ]}
         />
       )}
-      <View style={styles.content} pointerEvents="box-none">
+      <View style={fittedImageBackgroundStyles.content} pointerEvents="box-none">
         {children}
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  image: {
-    position: 'absolute',
-  },
-  desktopFade: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 120,
-  },
-  content: {
-    ...StyleSheet.absoluteFill,
-  },
-});

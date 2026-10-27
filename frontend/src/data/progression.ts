@@ -1,4 +1,3 @@
-// XP required to go from `level` to `level + 1`.
 export function xpForLevel(level: number): number {
   return 80 + (level - 1) * 35;
 }

@@ -1,8 +1,8 @@
 export type PetPhraseContext = {
-  hour: number; // 0-23, local device time
+  hour: number;
   streak: number;
   phase: 'idle' | 'focus' | 'break';
-  elapsedFocusMinutes: number; // minutes into the current focus session, 0 if not focusing
+  elapsedFocusMinutes: number;
 };
 
 function pick(list: string[]): string {
@@ -69,11 +69,6 @@ const NIGHT = [
   'Shh, todo tranquilo. Estudiemos con calma.',
 ];
 
-/**
- * Picks a comic-bubble line for the pet based on what's happening: focus
- * progress takes priority (it's the most "alive" moment), then streak
- * milestones, falling back to a time-of-day greeting.
- */
 export function getPetPhrase(ctx: PetPhraseContext): string {
   if (ctx.phase === 'focus') {
     if (ctx.elapsedFocusMinutes >= 20) return pick(FOCUSING_LONG);

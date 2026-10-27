@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { Text, TextInput, View } from 'react-native';
+import { colors, renameModalStyles } from '../style';
 import BlurredModal from './BlurredModal';
 import PrimaryButton from './PrimaryButton';
 
@@ -29,10 +29,10 @@ export default function RenameModal({ visible, initialName, onSave, onClose }: P
 
   return (
     <BlurredModal visible={visible} onClose={onClose} align="center">
-      <View style={styles.card}>
-        <Text style={styles.emoji}>✏️</Text>
-        <Text style={styles.title}>Nombra a tu mascota</Text>
-        <Text style={styles.subtitle}>Elige el nombre con el que la vas a llamar</Text>
+      <View style={renameModalStyles.card}>
+        <Text style={renameModalStyles.emoji}>✏️</Text>
+        <Text style={renameModalStyles.title}>Nombra a tu mascota</Text>
+        <Text style={renameModalStyles.subtitle}>Elige el nombre con el que la vas a llamar</Text>
 
         <TextInput
           value={draft}
@@ -40,16 +40,16 @@ export default function RenameModal({ visible, initialName, onSave, onClose }: P
           maxLength={MAX_LENGTH}
           placeholder="Nombre de tu mascota"
           placeholderTextColor={colors.textSecondary}
-          style={styles.input}
+          style={renameModalStyles.input}
           autoFocus
           returnKeyType="done"
           onSubmitEditing={handleSave}
         />
-        <Text style={styles.counter}>
+        <Text style={renameModalStyles.counter}>
           {draft.trim().length}/{MAX_LENGTH}
         </Text>
 
-        <View style={styles.actions}>
+        <View style={renameModalStyles.actions}>
           <PrimaryButton label="Cancelar" variant="secondary" onPress={onClose} sound="tap" />
           <PrimaryButton
             label="Guardar"
@@ -62,64 +62,3 @@ export default function RenameModal({ visible, initialName, onSave, onClose }: P
     </BlurredModal>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    width: '100%',
-    maxWidth: 340,
-    backgroundColor: colors.card,
-    borderRadius: 26,
-    paddingVertical: 26,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.border,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  emoji: {
-    fontSize: 36,
-    marginBottom: 6,
-  },
-  title: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '500',
-    marginTop: 4,
-    marginBottom: 18,
-    textAlign: 'center',
-  },
-  input: {
-    width: '100%',
-    backgroundColor: colors.appBg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  counter: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginTop: 6,
-    marginBottom: 18,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-});

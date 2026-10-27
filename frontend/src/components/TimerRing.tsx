@@ -1,10 +1,10 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors } from '../theme/colors';
+import { colors, timerRingStyles } from '../style';
 
 type Props = {
-  progress: number; // 0..1 remaining
+  progress: number;
   label: string;
   sublabel: string;
   size?: number;
@@ -17,7 +17,7 @@ export default function TimerRing({ progress, label, sublabel, size = 180 }: Pro
   const dashOffset = circumference * (1 - progress);
 
   return (
-    <View style={[styles.wrap, { width: size, height: size }]}>
+    <View style={[timerRingStyles.wrap, { width: size, height: size }]}>
       <Svg width={size} height={size}>
         <Circle
           cx={size / 2}
@@ -40,40 +40,10 @@ export default function TimerRing({ progress, label, sublabel, size = 180 }: Pro
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </Svg>
-      <View style={styles.center}>
-        <Text style={[styles.time, size >= 240 && styles.largeTime]}>{label}</Text>
-        <Text style={[styles.sub, size >= 240 && styles.largeSub]}>{sublabel}</Text>
+      <View style={timerRingStyles.center}>
+        <Text style={[timerRingStyles.time, size >= 240 && timerRingStyles.largeTime]}>{label}</Text>
+        <Text style={[timerRingStyles.sub, size >= 240 && timerRingStyles.largeSub]}>{sublabel}</Text>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  center: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  time: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    fontVariant: ['tabular-nums'],
-  },
-  largeTime: {
-    fontSize: 48,
-  },
-  sub: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  largeSub: {
-    fontSize: 16,
-    marginTop: 5,
-  },
-});

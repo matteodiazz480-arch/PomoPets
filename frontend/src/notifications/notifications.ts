@@ -1,24 +1,10 @@
-// Imported from expo-notifications' individual submodules rather than the
-// package root (`expo-notifications` / `expo-notifications/build/index`).
-// The package root file unconditionally re-exports a "push auto-registration"
-// side-effect module that throws the instant it's imported on Android inside
-// Expo Go (push registration was removed from Expo Go in SDK 53) — even
-// though we never touch push at all here, only local scheduling. Every
-// submodule below was checked against its own source: none of them import
-// that file or the package root, directly or transitively, so this sidesteps
-// the crash entirely while keeping local notifications fully working in
-// Expo Go, no development build required.
 import { cancelScheduledNotificationAsync } from 'expo-notifications/build/cancelScheduledNotificationAsync';
 import { dismissNotificationAsync } from 'expo-notifications/build/dismissNotificationAsync';
-import { SchedulableTriggerInputTypes } from 'expo-notifications/build/Notifications.types';
 import { requestPermissionsAsync } from 'expo-notifications/build/NotificationPermissions';
+import { SchedulableTriggerInputTypes } from 'expo-notifications/build/Notifications.types';
 import { setNotificationHandler } from 'expo-notifications/build/NotificationsHandler';
 import { scheduleNotificationAsync } from 'expo-notifications/build/scheduleNotificationAsync';
 
-// Custom notification sound (alarm.wav, declared in app.json's expo-notifications
-// plugin) only actually plays on a native dev/production build — Expo Go can't
-// bundle it, since that bundling happens at native build time. It silently falls
-// back to the OS default sound there, so this is safe either way.
 const NOTIFICATION_SOUND = 'alarm.wav';
 
 try {
@@ -30,9 +16,7 @@ try {
       shouldSetBadge: false,
     }),
   });
-} catch {
-  // ignore — notifications are a non-critical enhancement
-}
+} catch {}
 
 function pick<T>(list: T[]): T {
   return list[Math.floor(Math.random() * list.length)];
@@ -53,9 +37,7 @@ export async function cancelNotification(id: string | null) {
   if (!id) return;
   try {
     await cancelScheduledNotificationAsync(id);
-  } catch {
-    // ignore — never let notification bookkeeping break the app
-  }
+  } catch {}
 }
 
 type TimerNotifPhase = 'focus' | 'break';
@@ -65,12 +47,6 @@ const TIMER_COPY: Record<TimerNotifPhase, { title: string; body: string }> = {
   break: { title: '☕ Descanso terminado', body: '¿Listo para otra sesión de enfoque?' },
 };
 
-/**
- * Schedules the "your Pomodoro/break just finished" alert. This is what
- * actually notifies the user when the timer completes while the app is
- * backgrounded or the screen is off — our in-app sound only covers the
- * foreground case, since the OS won't run JS while backgrounded.
- */
 export async function scheduleTimerNotification(seconds: number, phase: TimerNotifPhase): Promise<string | null> {
   if (seconds <= 0) return null;
   try {
@@ -82,20 +58,6 @@ export async function scheduleTimerNotification(seconds: number, phase: TimerNot
     return null;
   }
 }
-
-// ---------------------------------------------------------------------------
-// "Timer in progress" status notification — shown in the status bar the
-// moment the app is backgrounded while a Pomodoro/break is running, so the
-// user can glance at how much time is left without opening the app.
-//
-// Important honesty note: expo-notifications has no live "chronometer" field
-// (verified against the SDK 57 docs) — a truly second-by-second ticking
-// countdown in the tray requires native code (an Android foreground-service
-// notification, or an iOS Live Activity), which isn't achievable from
-// Expo's managed JS API. What this gives instead is a fresh snapshot —
-// "quedan 18 min · termina a las 14:35" — refreshed every time the app is
-// backgrounded, plus the precise completion alert already covered above.
-// ---------------------------------------------------------------------------
 
 const TIMER_PROGRESS_ID = 'pomopets-timer-progress';
 
@@ -113,26 +75,16 @@ export async function showTimerProgressNotification(phase: TimerNotifPhase, seco
     await scheduleNotificationAsync({
       identifier: TIMER_PROGRESS_ID,
       content: { title, body, sticky: true, sound: false },
-      trigger: null, // deliver immediately — this is a live status, not a future alert
+      trigger: null,
     });
-  } catch {
-    // ignore — this is a nice-to-have status display
-  }
+  } catch {}
 }
 
 export async function dismissTimerProgressNotification() {
   try {
     await dismissNotificationAsync(TIMER_PROGRESS_ID);
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
-
-// ---------------------------------------------------------------------------
-// "Come back" care reminder — one gentle nudge scheduled for a sensible time
-// later today (not just N hours from now), rescheduled each time the app is
-// backgrounded so there's never more than one pending at once.
-// ---------------------------------------------------------------------------
 
 const STREAK_MESSAGES: { title: string; body: string }[] = [
   { title: '🔥 Tu racha te espera', body: '¡Hola! ¿Estudiamos un ratito hoy para mantener el fuego encendido?' },
@@ -151,15 +103,6 @@ const SAD_MESSAGES: { title: string; body: string }[] = [
 
 let careReminderId: string | null = null;
 
-/**
- * Picks a sensible future clock time for today's reminder based on the
- * current hour, so it lands when it's actually useful — not literally N
- * hours from whenever the user happened to background the app:
- *  - morning (before 13:00) → reminder at 17:00 (tarde)
- *  - afternoon (13:00–19:00) → reminder at 20:30 (noche)
- *  - evening (after 19:00) → a short nudge 2h later, but never past 22:30
- *    (no point pinging someone at 1am — returns null, meaning "skip today")
- */
 function computeSmartReminderDate(now: Date): Date | null {
   const hour = now.getHours();
   const target = new Date(now);

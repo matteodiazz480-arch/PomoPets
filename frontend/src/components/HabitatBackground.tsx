@@ -8,6 +8,7 @@ import Svg, {
   Path,
   Stop,
 } from 'react-native-svg';
+import { habitatBackgroundStyles } from '../style';
 import FittedImageBackground from './FittedImageBackground';
 
 const BACKGROUND_IMAGE = require('../../Pets/Background.png');
@@ -64,7 +65,7 @@ export default function HabitatBackground({ children, transparentDesktop = false
 
   if (desktop && transparentDesktop) {
     return (
-      <View style={styles.transparentContainer} pointerEvents="box-none">
+      <View style={habitatBackgroundStyles.transparentContainer} pointerEvents="box-none">
         {children}
       </View>
     );
@@ -83,24 +84,11 @@ export default function HabitatBackground({ children, transparentDesktop = false
   }
 
   return (
-    <View style={styles.container}>
+    <View style={habitatBackgroundStyles.container}>
       <DefaultDesktopLandscape />
-      <View style={styles.content} pointerEvents="box-none">
+      <View style={habitatBackgroundStyles.content} pointerEvents="box-none">
         {children}
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  transparentContainer: {
-    flex: 1,
-  },
-  content: {
-    ...StyleSheet.absoluteFill,
-  },
-});

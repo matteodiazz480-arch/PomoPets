@@ -35,8 +35,6 @@ export type MissionDef = {
   getProgress: (s: MissionProgressState) => number;
 };
 
-// The full catalog of possible daily missions. Which ones show up on a given
-// day is decided by WEEKLY_SCHEDULE below, not by picking from here directly.
 const MISSION_POOL: Record<MissionId, MissionDef> = {
   first_session: {
     id: 'first_session',
@@ -180,25 +178,16 @@ const MISSION_POOL: Record<MissionId, MissionDef> = {
   },
 };
 
-// Which missions show up each day of the week — index matches Date#getDay()
-// (0 = Sunday … 6 = Saturday), so the set is stable week to week: the same
-// weekday always brings back the same objectives instead of a random mix.
 const WEEKLY_SCHEDULE: Record<number, MissionId[]> = {
-  0: ['first_session', 'quarter_hour', 'feed_friend', 'happy_pet'], // Domingo — día suave
-  1: ['fifty_minutes', 'two_sessions', 'feed_friend', 'well_fed'], // Lunes — arranque de semana
-  2: ['triple_focus', 'half_hour', 'feed_twice', 'happy_pet'], // Martes — doble ración
-  3: ['deep_focus', 'two_sessions', 'feed_friend', 'well_fed'], // Miércoles
-  4: ['hour_power', 'triple_focus', 'feed_twice', 'perfect_care'], // Jueves
-  5: ['quad_focus', 'half_hour', 'feed_friend', 'happy_pet'], // Viernes
-  6: ['perfect_care', 'quarter_hour', 'two_sessions', 'well_fed'], // Sábado
+  0: ['first_session', 'quarter_hour', 'feed_friend', 'happy_pet'],
+  1: ['fifty_minutes', 'two_sessions', 'feed_friend', 'well_fed'],
+  2: ['triple_focus', 'half_hour', 'feed_twice', 'happy_pet'],
+  3: ['deep_focus', 'two_sessions', 'feed_friend', 'well_fed'],
+  4: ['hour_power', 'triple_focus', 'feed_twice', 'perfect_care'],
+  5: ['quad_focus', 'half_hour', 'feed_friend', 'happy_pet'],
+  6: ['perfect_care', 'quarter_hour', 'two_sessions', 'well_fed'],
 };
 
-/**
- * Today's missions are decided purely by the day of the week, parsed out of a
- * yyyy-m-d date string (same format as GameContext's todayKey) — so the same
- * weekday always shows the same objectives, e.g. every Monday brings the
- * 50-minute goal, every Tuesday brings "feed twice".
- */
 export function getDailyMissions(dateKey: string): MissionDef[] {
   const [y, m, d] = dateKey.split('-').map(Number);
   const weekday = new Date(y, m - 1, d).getDay();
@@ -209,8 +198,6 @@ export function getMissionById(id: MissionId): MissionDef | undefined {
   return MISSION_POOL[id];
 }
 
-// Kept for any code that still wants "today's missions" without threading a
-// date through — resolves to the current device date.
 export function getTodaysMissions(): MissionDef[] {
   const d = new Date();
   return getDailyMissions(`${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`);
