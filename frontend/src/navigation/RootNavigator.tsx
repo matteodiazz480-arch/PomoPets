@@ -39,10 +39,11 @@ function AppTabs({ desktop }: { desktop: boolean }) {
 
         return {
           headerShown: false,
-          freezeOnBlur: true,
+          animation: 'none',
+          freezeOnBlur: false,
           sceneStyle: desktop
             ? [styles.desktopScene, route.name !== focusedRoute && styles.hiddenDesktopScene]
-            : undefined,
+            : { backgroundColor: colors.appBg },
         };
       }}
       tabBar={(props) => <CustomTabBar {...props} />}
@@ -201,11 +202,14 @@ export default function RootNavigator() {
         </View>
       )}
       <NavigationContainer
-        theme={
-          desktop
-            ? { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: 'transparent' } }
-            : DefaultTheme
-        }
+        theme={{
+          ...DefaultTheme,
+          colors: {
+            ...DefaultTheme.colors,
+            background: desktop ? 'transparent' : colors.appBg,
+            card: colors.appBg,
+          },
+        }}
       >
         <AppTabs desktop={desktop} />
       </NavigationContainer>
@@ -216,6 +220,7 @@ export default function RootNavigator() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: colors.appBg,
   },
   desktopScene: {
     marginLeft: SIDEBAR_WIDTH,

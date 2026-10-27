@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Modal,
   ScrollView,
@@ -15,6 +16,8 @@ import {
 } from 'react-native';
 import { playSound } from '../audio/sounds';
 import { useGame } from '../context/GameContext';
+import { levelFromTotalXp } from '../data/progression';
+import { syncPlayerScore } from '../services/firebase';
 import { colors } from '../theme/colors';
 
 type Props = {
@@ -22,14 +25,16 @@ type Props = {
   onClose: () => void;
 };
 
-async function convertUriToCompressedBase64(uri: string): Promise<string> {
-  return new Promise((resolve) => {
-    if (uri.startsWith('data:image/') && uri.length < 80000) {
-      resolve(uri);
-      return;
-    }
+async function convertAssetToDataUri(asset: ImagePicker.ImagePickerAsset): Promise<string> {
+  // 1. If Expo already gave us base64 (always provided on native mobile with base64: true)
+  if (asset.base64) {
+    const raw = asset.base64;
+    return raw.startsWith('data:') ? raw : `data:image/jpeg;base64,${raw}`;
+  }
 
-    if (typeof document !== 'undefined') {
+  // 2. Web / Browser Canvas conversion
+  if (typeof document !== 'undefined') {
+    return new Promise((resolve) => {
       const img = new (window as any).Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
@@ -40,34 +45,45 @@ async function convertUriToCompressedBase64(uri: string): Promise<string> {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, maxDim, maxDim);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          resolve(dataUrl);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
         } else {
-          resolve(uri);
+          resolve(asset.uri);
         }
       };
-      img.onerror = () => {
-        resolve(uri);
-      };
-      img.src = uri;
-      return;
-    }
+      img.onerror = () => resolve(asset.uri);
+      img.src = asset.uri;
+    });
+  }
 
-    resolve(uri);
-  });
+  // 3. Fallback with FileReader (supported natively on React Native)
+  try {
+    const response = await fetch(asset.uri);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(asset.uri);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return asset.uri;
+  }
 }
 
 export default function ProfileModal({ visible, onClose }: Props) {
-  const { state, level, setPlayerName, setPhotoUrl, syncScoreToCloud } = useGame();
+  const { state, level, setPlayerName, setPhotoUrl } = useGame();
   const [name, setName] = useState(state.playerName || '');
+  const [photoPreview, setPhotoPreview] = useState<string | null>(state.photoUrl || null);
   const [loadingImage, setLoadingImage] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Sync state if modal is opened
+  // Sync state when modal is opened
   React.useEffect(() => {
     if (visible) {
       setName(state.playerName || '');
+      setPhotoPreview(state.photoUrl || null);
     }
-  }, [visible, state.playerName]);
+  }, [visible, state.playerName, state.photoUrl]);
 
   const handlePickImage = async () => {
     try {
@@ -85,21 +101,30 @@ export default function ProfileModal({ visible, onClose }: Props) {
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.5,
+        quality: 0.4,
         base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
-        let imageUri = asset.base64
-          ? `data:image/jpeg;base64,${asset.base64}`
-          : asset.uri;
+        const dataUri = await convertAssetToDataUri(asset);
 
-        // Convert blob/local file into cross-device compressed base64 JPEG
-        imageUri = await convertUriToCompressedBase64(imageUri);
+        // Update local preview immediately
+        setPhotoPreview(dataUri);
+        setPhotoUrl(dataUri);
 
-        setPhotoUrl(imageUri);
-        await syncScoreToCloud();
+        // Immediately sync to cloud so other users see the photo
+        await syncPlayerScore({
+          id: state.playerId || 'player_default',
+          name: name.trim() || state.playerName || 'Jugador',
+          petName: state.petName || 'Cornolín',
+          level: levelFromTotalXp(state.totalXp).level,
+          totalXp: state.totalXp,
+          minutesStudied: state.minutesStudiedTotal,
+          streak: state.streak,
+          photoUrl: dataUri,
+        });
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         playSound('success');
       }
@@ -110,21 +135,49 @@ export default function ProfileModal({ visible, onClose }: Props) {
     }
   };
 
-  const handleRemovePhoto = () => {
+  const handleRemovePhoto = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     playSound('tap');
+    setPhotoPreview(null);
     setPhotoUrl(null);
+
+    await syncPlayerScore({
+      id: state.playerId || 'player_default',
+      name: name.trim() || state.playerName || 'Jugador',
+      petName: state.petName || 'Cornolín',
+      level: levelFromTotalXp(state.totalXp).level,
+      totalXp: state.totalXp,
+      minutesStudied: state.minutesStudiedTotal,
+      streak: state.streak,
+      photoUrl: '',
+    });
   };
 
   const handleSave = async () => {
     const trimmed = name.trim();
-    if (trimmed) {
-      setPlayerName(trimmed);
-      await syncScoreToCloud();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      playSound('success');
-      onClose();
-    }
+    if (!trimmed) return;
+
+    setSaving(true);
+    setPlayerName(trimmed);
+
+    const activePhoto = photoPreview || state.photoUrl || '';
+
+    // Directly publish to Firestore with the new name and photo
+    await syncPlayerScore({
+      id: state.playerId || 'player_default',
+      name: trimmed,
+      petName: state.petName || 'Cornolín',
+      level: levelFromTotalXp(state.totalXp).level,
+      totalXp: state.totalXp,
+      minutesStudied: state.minutesStudiedTotal,
+      streak: state.streak,
+      photoUrl: activePhoto,
+    });
+
+    setSaving(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    playSound('success');
+    onClose();
   };
 
   const formatHours = (minutes: number) => {
@@ -142,19 +195,25 @@ export default function ProfileModal({ visible, onClose }: Props) {
         <View style={styles.sheet}>
           <View style={styles.handle} />
 
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={onClose}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <Ionicons name="close" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
             <Text style={styles.title}>Perfil de Jugador</Text>
-            <Text style={styles.subtitle}>Tu foto y nombre serán visibles por todos en el torneo semanal</Text>
+            <Text style={styles.subtitle}>
+              Personaliza tu nombre y foto para que todos te vean en el torneo semanal
+            </Text>
 
             {/* Avatar & Photo Picker */}
             <View style={styles.avatarSection}>
               <TouchableOpacity activeOpacity={0.85} onPress={handlePickImage} style={styles.avatarWrap}>
-                {state.photoUrl ? (
-                  <Image source={{ uri: state.photoUrl }} style={styles.avatarImage} />
+                {photoPreview ? (
+                  <Image source={{ uri: photoPreview }} style={styles.avatarImage} />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Ionicons name="person" size={54} color="#94A3B8" />
@@ -166,15 +225,30 @@ export default function ProfileModal({ visible, onClose }: Props) {
               </TouchableOpacity>
 
               <View style={styles.photoActions}>
-                <TouchableOpacity style={styles.uploadBtn} activeOpacity={0.85} onPress={handlePickImage}>
-                  <Ionicons name="image-outline" size={16} color={colors.primaryDark} />
-                  <Text style={styles.uploadBtnText}>
-                    {state.photoUrl ? 'Cambiar Foto' : 'Subir Foto de Perfil'}
-                  </Text>
+                <TouchableOpacity
+                  style={styles.uploadBtn}
+                  activeOpacity={0.85}
+                  onPress={handlePickImage}
+                  disabled={loadingImage}
+                >
+                  {loadingImage ? (
+                    <ActivityIndicator size="small" color={colors.primaryDark} />
+                  ) : (
+                    <>
+                      <Ionicons name="image-outline" size={16} color={colors.primaryDark} />
+                      <Text style={styles.uploadBtnText}>
+                        {photoPreview ? 'Cambiar Foto' : 'Subir Foto de Perfil'}
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
 
-                {state.photoUrl && (
-                  <TouchableOpacity style={styles.removePhotoBtn} activeOpacity={0.85} onPress={handleRemovePhoto}>
+                {photoPreview && (
+                  <TouchableOpacity
+                    style={styles.removePhotoBtn}
+                    activeOpacity={0.85}
+                    onPress={handleRemovePhoto}
+                  >
                     <Text style={styles.removePhotoText}>Quitar foto</Text>
                   </TouchableOpacity>
                 )}
@@ -183,12 +257,12 @@ export default function ProfileModal({ visible, onClose }: Props) {
 
             {/* Name Input */}
             <View style={styles.inputSection}>
-              <Text style={styles.inputLabel}>Tu Nombre o Apodo:</Text>
+              <Text style={styles.inputLabel}>Tu Nombre o Apodo Público:</Text>
               <TextInput
                 style={styles.textInput}
                 value={name}
                 onChangeText={setName}
-                placeholder="Ej: Sofía Estudiosa"
+                placeholder="Escribe tu nombre..."
                 placeholderTextColor="#94A3B8"
                 maxLength={24}
               />
@@ -218,8 +292,15 @@ export default function ProfileModal({ visible, onClose }: Props) {
             </View>
 
             {/* Save Button */}
-            <TouchableOpacity style={styles.saveBtn} activeOpacity={0.88} onPress={handleSave}>
-              <Text style={styles.saveBtnText}>Guardar y Sincronizar</Text>
+            <TouchableOpacity
+              style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+              activeOpacity={0.88}
+              onPress={handleSave}
+              disabled={saving}
+            >
+              <Text style={styles.saveBtnText}>
+                {saving ? 'Guardando...' : 'Guardar Cambios'}
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -286,7 +367,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     marginBottom: 20,
-    maxWidth: 280,
+    maxWidth: 290,
   },
   avatarSection: {
     alignItems: 'center',
