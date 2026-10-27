@@ -22,7 +22,10 @@ type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const TABS: Record<string, { icon: IconName; iconFocused: IconName; label: string }> = {
   Habitat: { icon: 'home-outline', iconFocused: 'home', label: 'Hábitat' },
+  Mascota: { icon: 'paw-outline', iconFocused: 'paw', label: 'Mascota' },
+  Tienda: { icon: 'bag-outline', iconFocused: 'bag', label: 'Tienda' },
   Torneo: { icon: 'trophy-outline', iconFocused: 'trophy', label: 'Torneo' },
+  Progreso: { icon: 'star-outline', iconFocused: 'star', label: 'Progreso' },
 };
 
 const SIDEBAR_WIDTH = 248;
@@ -45,7 +48,10 @@ function AppTabs({ desktop }: { desktop: boolean }) {
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tab.Screen name="Habitat" component={HabitatScreen} />
+      <Tab.Screen name="Mascota" component={PetCareScreen} />
+      <Tab.Screen name="Tienda" component={ShopScreen} />
       <Tab.Screen name="Torneo" component={TournamentScreen} />
+      <Tab.Screen name="Progreso" component={ProgressScreen} />
     </Tab.Navigator>
   );
 }

@@ -4,21 +4,28 @@ import React, { useEffect, useState } from 'react';
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '../audio/sounds';
+import CoinIcon from './CoinIcon';
 import { colors } from '../theme/colors';
 
 type Props = {
+  coins: number;
+  streak: number;
   playerName: string;
   photoUrl: string | null;
   level: number;
   onOpenProfile: () => void;
+  onOpenCoins?: () => void;
   desktop?: boolean;
 };
 
 export default function TopBar({
+  coins,
+  streak,
   playerName,
   photoUrl,
   level,
   onOpenProfile,
+  onOpenCoins,
   desktop = false,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -62,7 +69,7 @@ export default function TopBar({
       ]}
       pointerEvents="box-none"
     >
-      {/* Profile Button - allows uploading and managing profile photo & name */}
+      {/* 1. Profile Avatar & Name (Tap to upload photo and edit name) */}
       <TouchableOpacity
         style={[styles.profilePill, desktop && styles.desktopProfilePill]}
         activeOpacity={0.88}
@@ -93,7 +100,34 @@ export default function TopBar({
         </View>
       </TouchableOpacity>
 
+      {/* 2. Coins & Streak Counters */}
       <View style={styles.rightGroup}>
+        {/* Coins counter */}
+        <TouchableOpacity
+          style={[styles.pill, styles.coinPill, desktop && styles.desktopPill]}
+          activeOpacity={onOpenCoins ? 0.85 : 1}
+          onPress={() => {
+            if (onOpenCoins) {
+              playSound('tap');
+              onOpenCoins();
+            }
+          }}
+        >
+          <CoinIcon size={desktop ? 24 : 19} />
+          <Text style={[styles.coinValue, desktop && styles.desktopCoinValue]} numberOfLines={1}>
+            {coins}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Streak counter */}
+        <View style={[styles.pill, styles.streakPill, desktop && styles.desktopPill]}>
+          <Text style={styles.streakEmoji}>🔥</Text>
+          <Text style={[styles.streakValue, desktop && styles.desktopStreakValue]} numberOfLines={1}>
+            {streak}
+          </Text>
+        </View>
+
+        {/* Web Fullscreen button */}
         {Platform.OS === 'web' && (
           <TouchableOpacity
             style={[styles.fsButton, desktop && styles.desktopFsButton]}
@@ -140,7 +174,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderWidth: 2,
     borderColor: colors.border,
-    gap: 10,
+    gap: 8,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.7,
@@ -153,9 +187,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
   },
   avatarWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#FEF3C7',
     alignItems: 'center',
     justifyContent: 'center',
@@ -166,12 +200,12 @@ const styles = StyleSheet.create({
   avatarImg: {
     width: '100%',
     height: '100%',
-    borderRadius: 16,
+    borderRadius: 15,
   },
   avatarPlaceholder: {
     width: '100%',
     height: '100%',
-    borderRadius: 16,
+    borderRadius: 15,
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
@@ -180,9 +214,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -2,
     right: -2,
-    width: 15,
-    height: 15,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: colors.primaryDark,
     alignItems: 'center',
     justifyContent: 'center',
@@ -196,18 +230,18 @@ const styles = StyleSheet.create({
   },
   playerName: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textPrimary,
-    maxWidth: 130,
+    maxWidth: 110,
   },
   desktopPlayerName: {
     fontSize: 15,
-    maxWidth: 200,
+    maxWidth: 180,
   },
   levelBadge: {
     backgroundColor: '#FEF3C7',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 1.5,
     borderRadius: 8,
   },
   levelBadgeText: {
@@ -220,10 +254,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    gap: 6,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  desktopPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 24,
+  },
+  coinPill: {
+    backgroundColor: '#FFFDF5',
+    borderColor: '#FDE68A',
+  },
+  coinValue: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  desktopCoinValue: {
+    fontSize: 16,
+  },
+  streakPill: {
+    backgroundColor: colors.streakBg,
+    borderColor: colors.border,
+  },
+  streakEmoji: {
+    fontSize: 14,
+  },
+  streakValue: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 13,
+    color: colors.textPrimary,
+  },
+  desktopStreakValue: {
+    fontSize: 15,
+  },
   fsButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
@@ -236,8 +318,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   desktopFsButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
   },
 });

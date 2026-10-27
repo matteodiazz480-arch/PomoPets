@@ -160,10 +160,13 @@ export default function HabitatScreen({ navigation }: any) {
   return (
     <HabitatBackground transparentDesktop={desktop}>
       <TopBar
+        coins={state.coins}
+        streak={state.streak}
         playerName={state.playerName}
         photoUrl={state.photoUrl}
         level={level}
         onOpenProfile={() => setProfileVisible(true)}
+        onOpenCoins={() => setCoinStoreVisible(true)}
         desktop={desktop}
       />
 
