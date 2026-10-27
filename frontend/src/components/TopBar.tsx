@@ -29,28 +29,6 @@ export default function TopBar({
   desktop = false,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  useEffect(() => {
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
-      document.addEventListener('fullscreenchange', onFsChange);
-      return () => document.removeEventListener('fullscreenchange', onFsChange);
-    }
-  }, []);
-
-  const toggleFullscreen = () => {
-    playSound('tap');
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      try {
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(() => {});
-        } else {
-          document.exitFullscreen().catch(() => {});
-        }
-      } catch {}
-    }
-  };
 
   const handleProfilePress = () => {
     try {
@@ -92,7 +70,7 @@ export default function TopBar({
 
         <View style={styles.profileTextWrap}>
           <Text style={[styles.playerName, desktop && styles.desktopPlayerName]} numberOfLines={1}>
-            {playerName || 'Mi Perfil'}
+            {playerName || 'Tu Nombre ✏️'}
           </Text>
           <View style={styles.levelBadge}>
             <Text style={styles.levelBadgeText}>Nv. {level}</Text>
@@ -126,23 +104,6 @@ export default function TopBar({
             {streak}
           </Text>
         </View>
-
-        {/* Web Fullscreen button */}
-        {Platform.OS === 'web' && (
-          <TouchableOpacity
-            style={[styles.fsButton, desktop && styles.desktopFsButton]}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-            onPress={toggleFullscreen}
-          >
-            <Ionicons
-              name={isFullscreen ? 'contract-outline' : 'expand-outline'}
-              size={desktop ? 20 : 16}
-              color={colors.textPrimary}
-            />
-          </TouchableOpacity>
-        )}
       </View>
     </View>
   );
@@ -301,25 +262,5 @@ const styles = StyleSheet.create({
   },
   desktopStreakValue: {
     fontSize: 15,
-  },
-  fsButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  desktopFsButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
   },
 });

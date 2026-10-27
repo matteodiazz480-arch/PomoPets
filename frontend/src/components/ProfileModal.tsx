@@ -22,15 +22,50 @@ type Props = {
   onClose: () => void;
 };
 
+async function convertUriToCompressedBase64(uri: string): Promise<string> {
+  return new Promise((resolve) => {
+    if (uri.startsWith('data:image/') && uri.length < 80000) {
+      resolve(uri);
+      return;
+    }
+
+    if (typeof document !== 'undefined') {
+      const img = new (window as any).Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 120;
+        canvas.width = maxDim;
+        canvas.height = maxDim;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, maxDim, maxDim);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl);
+        } else {
+          resolve(uri);
+        }
+      };
+      img.onerror = () => {
+        resolve(uri);
+      };
+      img.src = uri;
+      return;
+    }
+
+    resolve(uri);
+  });
+}
+
 export default function ProfileModal({ visible, onClose }: Props) {
   const { state, level, setPlayerName, setPhotoUrl, syncScoreToCloud } = useGame();
-  const [name, setName] = useState(state.playerName || 'Estudiante');
+  const [name, setName] = useState(state.playerName || '');
   const [loadingImage, setLoadingImage] = useState(false);
 
   // Sync state if modal is opened
   React.useEffect(() => {
     if (visible) {
-      setName(state.playerName || 'Estudiante');
+      setName(state.playerName || '');
     }
   }, [visible, state.playerName]);
 
@@ -56,11 +91,15 @@ export default function ProfileModal({ visible, onClose }: Props) {
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
-        const imageUri = asset.base64
+        let imageUri = asset.base64
           ? `data:image/jpeg;base64,${asset.base64}`
           : asset.uri;
 
+        // Convert blob/local file into cross-device compressed base64 JPEG
+        imageUri = await convertUriToCompressedBase64(imageUri);
+
         setPhotoUrl(imageUri);
+        await syncScoreToCloud();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         playSound('success');
       }

@@ -45,7 +45,7 @@ function PlayerAvatar({
   size?: number;
   borderColor?: string;
 }) {
-  const initial = (name || 'E').trim().charAt(0).toUpperCase();
+  const initial = (name || 'J').trim().charAt(0).toUpperCase();
 
   return (
     <View
@@ -100,7 +100,7 @@ export default function TournamentScreen() {
       if (!exists && state.playerId) {
         list.push({
           id: state.playerId,
-          name: state.playerName || 'Estudiante',
+          name: state.playerName || 'Jugador',
           petName: state.petName || 'Cornolín',
           level,
           totalXp: state.totalXp,
@@ -280,7 +280,7 @@ export default function TournamentScreen() {
           <View style={styles.myInfo}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={styles.myName} numberOfLines={1}>
-                {state.playerName || 'Estudiante'} (Tú)
+                {state.playerName ? `${state.playerName} (Tú)` : 'Toca para poner tu nombre ✏️'}
               </Text>
               <Ionicons name="pencil-sharp" size={13} color={colors.primary} />
             </View>

@@ -47,7 +47,7 @@ export async function syncPlayerScore(player: TournamentPlayer): Promise<boolean
     await setDoc(
       playerRef,
       {
-        name: player.name || 'Estudiante PomoPet',
+        name: player.name?.trim() || 'Jugador',
         petName: player.petName || 'Cornolín',
         level: Number(player.level || 1),
         totalXp: Number(player.totalXp || 0),
@@ -78,7 +78,7 @@ export async function fetchLeaderboard(
       const data = docSnap.data();
       players.push({
         id: docSnap.id,
-        name: data.name ?? 'Estudiante',
+        name: data.name ?? 'Jugador',
         petName: data.petName ?? 'Mascota',
         level: Number(data.level ?? 1),
         totalXp: Number(data.totalXp ?? 0),
@@ -116,7 +116,7 @@ export function subscribeToLeaderboard(
           const data = docSnap.data();
           players.push({
             id: docSnap.id,
-            name: data.name ?? 'Estudiante',
+            name: data.name ?? 'Jugador',
             petName: data.petName ?? 'Mascota',
             level: Number(data.level ?? 1),
             totalXp: Number(data.totalXp ?? 0),

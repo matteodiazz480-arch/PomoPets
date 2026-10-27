@@ -70,7 +70,7 @@ type GameState = {
 
 const DEFAULT_STATE: GameState = {
   playerId: '',
-  playerName: 'Estudiante',
+  playerName: '',
   photoUrl: null,
   petName: null,
   tasks: [],
@@ -313,8 +313,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (!parsed.playerId) {
             parsed.playerId = 'player_' + Math.random().toString(36).substring(2, 10);
           }
-          if (!parsed.playerName) {
-            parsed.playerName = 'Estudiante #' + Math.floor(100 + Math.random() * 900);
+          if (parsed.playerName && parsed.playerName.startsWith('Estudiante')) {
+            parsed.playerName = '';
           }
           // Ensure all accessories are unlocked for free test & exploration
           parsed.ownedAccessories = Array.from(new Set([...(parsed.ownedAccessories ?? []), ...ALL_ACCESSORY_IDS]));
@@ -324,7 +324,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           setState((prev) => ({
             ...prev,
             playerId: 'player_' + Math.random().toString(36).substring(2, 10),
-            playerName: 'Estudiante #' + Math.floor(100 + Math.random() * 900),
+            playerName: '',
           }));
         }
       } finally {
