@@ -243,6 +243,7 @@ export default function HabitatScreen() {
               <View style={[habitatScreenStyles.controlsRow, desktop && habitatScreenStyles.desktopControlsRow]}>
                 {phase === 'idle' && (
                   <PrimaryButton
+                    key="btn-start"
                     label="Iniciar Pomodoro"
                     iconName="play"
                     size={largeControls ? 'large' : 'default'}
@@ -251,6 +252,7 @@ export default function HabitatScreen() {
                 )}
                 {phase !== 'idle' && isRunning && (
                   <PrimaryButton
+                    key="btn-pause"
                     label="Pausar"
                     iconName="pause"
                     variant="secondary"
@@ -260,6 +262,7 @@ export default function HabitatScreen() {
                 )}
                 {phase !== 'idle' && !isRunning && (
                   <PrimaryButton
+                    key="btn-resume"
                     label="Reanudar"
                     iconName="play"
                     size={largeControls ? 'large' : 'default'}
@@ -269,6 +272,7 @@ export default function HabitatScreen() {
                 {phase !== 'idle' && (
                   <View style={habitatScreenStyles.resetWrap}>
                     <PrimaryButton
+                      key="btn-reset"
                       label="Reiniciar"
                       iconName="refresh"
                       variant="ghost"

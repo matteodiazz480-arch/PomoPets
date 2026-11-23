@@ -12,9 +12,10 @@ type Props = {
 
 export default function TimerRing({ progress, label, sublabel, size = 180 }: Props) {
   const stroke = size >= 240 ? 15 : 12;
-  const radius = (size - stroke) / 2;
+  const radius = Math.max(1, (size - stroke) / 2);
   const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference * (1 - progress);
+  const safeProgress = Number.isFinite(progress) ? Math.max(0, Math.min(1, progress)) : 0;
+  const dashOffset = circumference * (1 - safeProgress);
 
   return (
     <View style={[timerRingStyles.wrap, { width: size, height: size }]}>

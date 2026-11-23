@@ -282,9 +282,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         setIsRunning(true);
         setSecondsLeft(seconds);
         setState((prev) => ({ ...prev, timerPhase: 'break', timerRunning: true, timerEndAt: endAt }));
-        scheduleTimerNotification(seconds, 'break').then((id) => {
-          timerNotifRef.current = id;
-        });
+        scheduleTimerNotification(seconds, 'break')
+          .then((id) => {
+            timerNotifRef.current = id;
+          })
+          .catch(() => {});
       } else {
         setPhase('idle');
         setIsRunning(false);
@@ -413,8 +415,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }
       }
     };
-    const sub = AppState.addEventListener('change', onChange);
-    return () => sub.remove();
+    let sub: any = null;
+    try {
+      sub = AppState.addEventListener('change', onChange);
+    } catch {}
+    return () => {
+      try {
+        if (sub && typeof sub.remove === 'function') {
+          sub.remove();
+        }
+      } catch {}
+    };
   }, [resyncTimer, clearInterval_]);
 
   const claimMission = useCallback((id: MissionId) => {
@@ -460,9 +471,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             const endAt = Date.now() + seconds * 1000;
             setPhase('break');
             setState((prev) => ({ ...prev, timerPhase: 'break', timerRunning: true, timerEndAt: endAt }));
-            scheduleTimerNotification(seconds, 'break').then((id) => {
-              timerNotifRef.current = id;
-            });
+            scheduleTimerNotification(seconds, 'break')
+              .then((id) => {
+                timerNotifRef.current = id;
+              })
+              .catch(() => {});
             return seconds;
           } else {
             setPhase('idle');
@@ -485,16 +498,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, [isRunning, phase, activeTick, clearInterval_, completeFocusSession]);
 
   const startFocus = useCallback(() => {
-    const seconds = stateRef.current.pomodoroMinutes * 60;
+    const seconds = (stateRef.current.pomodoroMinutes || 25) * 60;
     const endAt = Date.now() + seconds * 1000;
     setPhase('focus');
     setSecondsLeft(seconds);
     setIsRunning(true);
     setState((prev) => ({ ...prev, timerPhase: 'focus', timerRunning: true, timerEndAt: endAt }));
     cancelNotification(timerNotifRef.current);
-    scheduleTimerNotification(seconds, 'focus').then((id) => {
-      timerNotifRef.current = id;
-    });
+    scheduleTimerNotification(seconds, 'focus')
+      .then((id) => {
+        timerNotifRef.current = id;
+      })
+      .catch(() => {});
   }, []);
 
   const pause = useCallback(() => {
@@ -507,19 +522,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const resume = useCallback(() => {
-    const seconds = secondsLeftRef.current;
+    const seconds = secondsLeftRef.current || (stateRef.current.pomodoroMinutes || 25) * 60;
     const endAt = Date.now() + seconds * 1000;
     setIsRunning(true);
     setState((prev) => ({ ...prev, timerRunning: true, timerEndAt: endAt }));
-    scheduleTimerNotification(seconds, phaseRef.current === 'break' ? 'break' : 'focus').then((id) => {
-      timerNotifRef.current = id;
-    });
+    scheduleTimerNotification(seconds, phaseRef.current === 'break' ? 'break' : 'focus')
+      .then((id) => {
+        timerNotifRef.current = id;
+      })
+      .catch(() => {});
   }, []);
 
   const reset = useCallback(() => {
     setIsRunning(false);
     setPhase('idle');
-    const seconds = stateRef.current.pomodoroMinutes * 60;
+    const seconds = (stateRef.current.pomodoroMinutes || 25) * 60;
     setSecondsLeft(seconds);
     setState((prev) => ({
       ...prev,

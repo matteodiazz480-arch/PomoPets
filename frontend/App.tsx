@@ -10,6 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { initAdMob } from './src/ads/admob';
 import { initAudio } from './src/audio/sounds';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import { GameProvider } from './src/context/GameContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import { requestNotificationPermissions } from './src/notifications/notifications';
@@ -37,9 +38,11 @@ export default function App() {
       {loading || !fontsLoaded ? (
         <LoadScreen onFinish={() => setLoading(false)} />
       ) : (
-        <GameProvider>
-          <RootNavigator />
-        </GameProvider>
+        <ErrorBoundary>
+          <GameProvider>
+            <RootNavigator />
+          </GameProvider>
+        </ErrorBoundary>
       )}
     </SafeAreaProvider>
   );

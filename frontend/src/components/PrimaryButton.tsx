@@ -39,13 +39,30 @@ export default function PrimaryButton({
 
   useEffect(() => {
     let mounted = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) setReducedMotion(enabled);
-    });
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReducedMotion);
+    try {
+      AccessibilityInfo.isReduceMotionEnabled()
+        .then((enabled) => {
+          if (mounted) setReducedMotion(!!enabled);
+        })
+        .catch(() => {});
+    } catch {}
+
+    let subscription: any = null;
+    try {
+      subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+        if (mounted) setReducedMotion(!!enabled);
+      });
+    } catch {}
+
     return () => {
       mounted = false;
-      subscription.remove();
+      try {
+        if (subscription && typeof subscription.remove === 'function') {
+          subscription.remove();
+        } else if (typeof (AccessibilityInfo as any).removeEventListener === 'function') {
+          (AccessibilityInfo as any).removeEventListener('reduceMotionChanged', setReducedMotion);
+        }
+      } catch {}
     };
   }, []);
 

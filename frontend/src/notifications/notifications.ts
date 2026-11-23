@@ -2,8 +2,10 @@ import { cancelScheduledNotificationAsync } from 'expo-notifications/build/cance
 import { dismissNotificationAsync } from 'expo-notifications/build/dismissNotificationAsync';
 import { requestPermissionsAsync } from 'expo-notifications/build/NotificationPermissions';
 import { SchedulableTriggerInputTypes } from 'expo-notifications/build/Notifications.types';
+import { setNotificationChannelAsync } from 'expo-notifications/build/setNotificationChannelAsync';
 import { setNotificationHandler } from 'expo-notifications/build/NotificationsHandler';
 import { scheduleNotificationAsync } from 'expo-notifications/build/scheduleNotificationAsync';
+import { Platform } from 'react-native';
 
 const NOTIFICATION_SOUND = 'alarm.wav';
 
@@ -18,11 +20,23 @@ try {
   });
 } catch {}
 
+if (Platform.OS === 'android') {
+  try {
+    setNotificationChannelAsync('default', {
+      name: 'PomoPets',
+      importance: 4,
+      sound: NOTIFICATION_SOUND,
+      vibrationPattern: [0, 250, 250, 250],
+    }).catch(() => {});
+  } catch {}
+}
+
 function pick<T>(list: T[]): T {
   return list[Math.floor(Math.random() * list.length)];
 }
 
 export async function requestNotificationPermissions(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
   try {
     const { status } = await requestPermissionsAsync({
       ios: { allowAlert: true, allowSound: true, allowBadge: false },
@@ -34,7 +48,7 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 }
 
 export async function cancelNotification(id: string | null) {
-  if (!id) return;
+  if (!id || Platform.OS === 'web') return;
   try {
     await cancelScheduledNotificationAsync(id);
   } catch {}
@@ -48,10 +62,14 @@ const TIMER_COPY: Record<TimerNotifPhase, { title: string; body: string }> = {
 };
 
 export async function scheduleTimerNotification(seconds: number, phase: TimerNotifPhase): Promise<string | null> {
-  if (seconds <= 0) return null;
+  if (seconds <= 0 || Platform.OS === 'web') return null;
   try {
     return await scheduleNotificationAsync({
-      content: { ...TIMER_COPY[phase], sound: NOTIFICATION_SOUND },
+      content: {
+        ...TIMER_COPY[phase],
+        sound: NOTIFICATION_SOUND,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
+      },
       trigger: { type: SchedulableTriggerInputTypes.TIME_INTERVAL, seconds, repeats: false },
     });
   } catch {
@@ -62,6 +80,7 @@ export async function scheduleTimerNotification(seconds: number, phase: TimerNot
 const TIMER_PROGRESS_ID = 'pomopets-timer-progress';
 
 export async function showTimerProgressNotification(phase: TimerNotifPhase, secondsLeft: number) {
+  if (Platform.OS === 'web') return;
   await dismissTimerProgressNotification();
 
   const finishAt = new Date(Date.now() + secondsLeft * 1000);
@@ -81,6 +100,7 @@ export async function showTimerProgressNotification(phase: TimerNotifPhase, seco
 }
 
 export async function dismissTimerProgressNotification() {
+  if (Platform.OS === 'web') return;
   try {
     await dismissNotificationAsync(TIMER_PROGRESS_ID);
   } catch {}
@@ -121,6 +141,7 @@ function computeSmartReminderDate(now: Date): Date | null {
 }
 
 export async function scheduleCareReminder(opts: { sad: boolean; streakAtRisk: boolean }) {
+  if (Platform.OS === 'web') return;
   await cancelNotification(careReminderId);
   careReminderId = null;
   if (!opts.sad && !opts.streakAtRisk) return;
@@ -132,7 +153,12 @@ export async function scheduleCareReminder(opts: { sad: boolean; streakAtRisk: b
 
   try {
     careReminderId = await scheduleNotificationAsync({
-      content: { title, body, sound: NOTIFICATION_SOUND },
+      content: {
+        title,
+        body,
+        sound: NOTIFICATION_SOUND,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
+      },
       trigger: { type: SchedulableTriggerInputTypes.DATE, date: when },
     });
   } catch {
@@ -141,6 +167,7 @@ export async function scheduleCareReminder(opts: { sad: boolean; streakAtRisk: b
 }
 
 export async function cancelCareReminder() {
+  if (Platform.OS === 'web') return;
   await cancelNotification(careReminderId);
   careReminderId = null;
 }
