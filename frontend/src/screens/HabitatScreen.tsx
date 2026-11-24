@@ -200,7 +200,7 @@ export default function HabitatScreen() {
                 </Text>
                 <Ionicons name="pencil" size={14} color={colors.textSecondary} style={habitatScreenStyles.petNameIcon} />
               </TouchableOpacity>
-              <PetAvatar eyesOpen={stage.eyesOpen} eyesClosed={stage.eyesClosed} size={petSize} />
+              <PetAvatar eyesOpen={stage.eyesOpen} eyesClosed={stage.eyesClosed} animation={stage.animation} size={petSize} />
             </View>
             <View style={habitatScreenStyles.xpBarWrap}>
               <XPBar level={level} xpIntoLevel={xpIntoLevel} xpToNext={xpToNext} large={desktop} />

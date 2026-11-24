@@ -10,6 +10,7 @@ import AccessoryOverlay from './AccessoryOverlay';
 type Props = {
   eyesOpen: any;
   eyesClosed: any;
+  animation?: any;
   size?: number;
   feedSignal?: number;
   equipped?: Partial<Record<AccessoryCategory, AccessoryId>>;
@@ -22,16 +23,21 @@ const BLINK_INTERVAL_MIN_MS = 5000;
 const BLINK_INTERVAL_VARIANCE_MS = 3000;
 const BLINK_DURATION_MS = 120;
 
+const CORNOLIN_ANIMATION = require('../../assets/pet/pet_animation.webp');
+const CORNOLIN_STATIC = require('../../Pets/Pet1-1.png');
+
 export default function PetAvatar({
   eyesOpen,
   eyesClosed,
+  animation,
   size = 260,
   feedSignal = 0,
   equipped,
 }: Props) {
+  const activeAnimation = animation ?? (eyesOpen === CORNOLIN_STATIC || !eyesOpen ? CORNOLIN_ANIMATION : null);
   const [blinking, setBlinking] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const imageWidth = size * (677 / 369);
+  const imageWidth = activeAnimation ? size : size * (677 / 369);
   const breath = useRef(new Animated.Value(0)).current;
   const feedBump = useRef(new Animated.Value(0)).current;
   const sparkle = useRef(new Animated.Value(0)).current;
@@ -179,31 +185,44 @@ export default function PetAvatar({
         <Animated.View
           style={[
             StyleSheet.absoluteFill,
-            { transform: [{ scale: breathScale }, { translateY: breathTranslateY }] },
+            { transform: activeAnimation ? [] : [{ scale: breathScale }, { translateY: breathTranslateY }] },
           ]}
         >
-          <Image
-            source={eyesOpen}
-            style={[
-              petAvatarStyles.petSprite,
-              { width: imageWidth, height: size, left: (size - imageWidth) / 2 },
-            ]}
-            resizeMode="contain"
-          />
-          <Image
-            source={eyesClosed}
-            style={[
-              petAvatarStyles.closedEyes,
-              {
-                width: imageWidth,
-                height: size,
-                top: 0,
-                left: (size - imageWidth) / 2,
-                opacity: blinking ? 1 : 0,
-              },
-            ]}
-            resizeMode="contain"
-          />
+          {activeAnimation ? (
+            <Image
+              source={activeAnimation}
+              style={[
+                petAvatarStyles.petSprite,
+                { width: size, height: size, left: 0 },
+              ]}
+              resizeMode="contain"
+            />
+          ) : (
+            <>
+              <Image
+                source={eyesOpen}
+                style={[
+                  petAvatarStyles.petSprite,
+                  { width: imageWidth, height: size, left: (size - imageWidth) / 2 },
+                ]}
+                resizeMode="contain"
+              />
+              <Image
+                source={eyesClosed}
+                style={[
+                  petAvatarStyles.closedEyes,
+                  {
+                    width: imageWidth,
+                    height: size,
+                    top: 0,
+                    left: (size - imageWidth) / 2,
+                    opacity: blinking ? 1 : 0,
+                  },
+                ]}
+                resizeMode="contain"
+              />
+            </>
+          )}
           <AccessoryOverlay equipped={activeEquipped} size={size} />
         </Animated.View>
       </Animated.View>

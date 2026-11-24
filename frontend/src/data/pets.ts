@@ -5,6 +5,7 @@ export type EvolutionStage = {
   minLevel: number;
   eyesOpen: any;
   eyesClosed: any;
+  animation?: any;
 };
 
 export const EVOLUTION_STAGES: EvolutionStage[] = [
@@ -15,6 +16,7 @@ export const EVOLUTION_STAGES: EvolutionStage[] = [
     minLevel: 1,
     eyesOpen: require('../../Pets/Pet1-1.png'),
     eyesClosed: require('../../Pets/Pet1-2.png'),
+    animation: require('../../assets/pet/pet_animation.webp'),
   },
   {
     id: 2,

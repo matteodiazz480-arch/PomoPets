@@ -89,6 +89,7 @@ export default function PetCareScreen() {
             <PetAvatar
               eyesOpen={stage.eyesOpen}
               eyesClosed={stage.eyesClosed}
+              animation={stage.animation}
               size={petSize}
               feedSignal={feedSignal}
               equipped={state.equippedAccessories}
